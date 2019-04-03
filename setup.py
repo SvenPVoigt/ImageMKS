@@ -11,7 +11,7 @@ setup(
     url='http://pypi.python.org/pypi/ImageMKS/',
     description='Sharing segmentation frameworks.',
     install_requires=[
-        "PyTorch >= 1.0.1",
+        "torch >= 1.0.1",
         "scikit-image >= 0.14.1",
         "SciPy >= 1.1.0"
     ],
