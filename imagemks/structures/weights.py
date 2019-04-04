@@ -4,6 +4,7 @@ import scipy.ndimage as ndi
 
 from .grids import divergent
 from .shapes import circle
+from ..common.size_check import circular_check
 
 
 def gauss(sigma, theta=0, size=None, centered=True):
@@ -65,8 +66,49 @@ def d2gauss():
     pass
 
 
-def radial():
-    pass
+def conical(r, slope=1, size=None, centered=True):
+    size = circular_check(r, size)
+
+    if centered:
+        c = [i//2 for i in size]
+    else:
+        c = [0,0]
+
+    K = circle(r, size, centered)
+
+    shifts = np.argwhere(K) - c
+    cone = np.zeros(size)
+
+    for i, s in enumerate(shifts):
+        cone[c[0]+s[0], c[1]+s[1]] = slope * (1 - (np.sqrt(s[0]**2+s[1]**2)/r))
+
+    cone[cone<0] = 0
+
+    return cone
+
+
+def drop(r, threshold=None, size=None, centered=True):
+    size = circular_check(r, size)
+
+    if centered:
+        c = [i//2 for i in size]
+    else:
+        c = [0,0]
+
+    K = circle(r, size, centered)
+    K[c[0], c[1]] = 0
+
+    shifts = np.argwhere(K) - c
+    drop = np.zeros(size)
+    for i, s in enumerate(shifts):
+        drop[c[0]+s[0], c[1]+s[1]] = 1 / np.sqrt(s[0]**2+s[1]**2)
+
+    drop[c[0], c[1]] = 1
+
+    if threshold:
+        drop[cone<threshold] = threshold
+
+    return drop
 
 
 def linear():

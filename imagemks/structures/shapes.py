@@ -5,8 +5,7 @@ from .grids import divergent
 
 def circle(r, size=None, centered=True, dtype=np.float32):
     if size is None:
-        size = (4*floor(r)+1, 4*floor(r)+1)
-        # size = (round(2*r+1), round(2*r+1))
+        size = (round(2*r+1), round(2*r+1))
 
     X, Y = divergent(size, centered)
 
