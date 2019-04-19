@@ -23,7 +23,7 @@ class readlist(Dataset):
 
         self.files = listdir(folderpath)
         self.files = list(i for i in self.files if path.isfile(path.join(folderpath, i)))
-        self.files = list(i for i in self.files if i.split('.')[-1] in {'jpg', 'jpeg', 'png', 'PNG'})
+        self.files = list(i for i in self.files if i.split('.')[-1] in {'jpg', 'jpeg', 'png', 'PNG', 'tif'})
 
         if order is 'sorted':
             self.files = sorted(self.files)
