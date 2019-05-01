@@ -8,6 +8,18 @@ from ..common.size_check import circular_check
 
 
 def gauss(sigma, theta=0, size=None, centered=True):
+    '''
+    Makes a circle with specified dtype. If bool or int, can be used as a mask.
+
+    Parameters
+    ----------
+    r : The radius of the circle.
+    size : The size of the output array that contains the object. Defaults to
+        (round(2*r+1), round(2*r+1)).
+    centered : If true, the center will be in the middle of the array
+        at pixel (size[0]//2, size[1]//2). If false, the center will be
+        at the origin pixel (0,0). Defaults to True.
+    '''
     if isinstance(sigma, list) or isinstance(sigma, tuple):
         sx, sy = sigma
     else:
@@ -40,30 +52,6 @@ def gauss(sigma, theta=0, size=None, centered=True):
     c = sin(theta)**2 / (2 * sx**2) + cos(theta)**2 / (2 * sy**2)
 
     return np.exp(-(a*X*X + 2*b*X*Y + c*Y*Y))
-
-
-def dgauss():
-    g = gaussian(s_x, s_y, theta_degrees, n)
-
-    if phi_degrees is None:
-        rads = 0
-    else:
-        rads = phi_degrees * np.pi / 180
-
-    der_x = np.array([ [-1, 1], ])
-    der_y = np.array([ [-1,], [1,] ])
-
-    gx = ndi.convolve(g, der_x, mode='mirror')
-
-    gy = ndi.convolve(g, der_y, mode='mirror')
-
-    dg = np.cos(rads) * gx + np.sin(rads) * gy
-
-    return (1/np.sum(np.abs(dg))) * dg
-
-
-def d2gauss():
-    pass
 
 
 def conical(r, slope=1, size=None, centered=True):
@@ -109,19 +97,3 @@ def drop(r, threshold=None, size=None, centered=True):
         drop[cone<threshold] = threshold
 
     return drop
-
-
-def linear():
-    pass
-
-
-def parabolic_radial():
-    pass
-
-
-def parabolic_straight():
-    pass
-
-
-def epanechnikov():
-    pass
