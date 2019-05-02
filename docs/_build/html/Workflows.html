@@ -1,0 +1,196 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Workflows &#8212; ImageMKS 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Kernels Filters and Masking" href="KernFiltMask.html" />
+    <link rel="prev" title="API" href="API.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="KernFiltMask.html" title="Kernels Filters and Masking"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="API.html" title="API"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ImageMKS 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="API.html" accesskey="U">API</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-imagemks.workflows">
+<span id="workflows"></span><h1>Workflows<a class="headerlink" href="#module-imagemks.workflows" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="imagemks.workflows.segment_fluor_cells">
+<code class="descclassname">imagemks.workflows.</code><code class="descname">segment_fluor_cells</code><span class="sig-paren">(</span><em>imgNuc</em>, <em>imgCyto</em>, <em>smooth_size</em>, <em>intensity_curve</em>, <em>short_th_radius</em>, <em>long_th_radius</em>, <em>min_frequency_to_remove</em>, <em>max_frequency_to_remove</em>, <em>max_size_of_small_objects_to_remove</em>, <em>peak_min_distance</em>, <em>size_after_watershed_to_remove</em>, <em>cyto_local_avg_size</em>, <em>zoomLev</em><span class="sig-paren">)</span><a class="headerlink" href="#imagemks.workflows.segment_fluor_cells" title="Permalink to this definition">¶</a></dt>
+<dd><p>Segments fluorescent cells.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>imgNuc</strong> (<em>(</em><em>M</em><em>,</em><em>N</em><em>) </em><em>numpy array</em>) – An image of nuclei with size (M,N)</p></li>
+<li><p><strong>imgCyto</strong> (<em>(</em><em>M</em><em>,</em><em>N</em><em>) </em><em>numpy array</em>) – An image of the cytoskeleton with same size (M,N).</p></li>
+<li><p><strong>smooth_size</strong> (<em>int</em><em>, </em><em>pixels</em>) – The sigma of the gaussian.</p></li>
+<li><p><strong>intensity_curve</strong> (<em>int</em>) – Exponent of the curve used to fit intensities on range [0,1]</p></li>
+<li><p><strong>short_th_radius</strong> (<em>int</em><em>, </em><em>pixels</em>) – Radius of neighborhood used to calculate a local
+average threshold.</p></li>
+<li><p><strong>long_th_radius</strong> (<em>int</em><em>, </em><em>pixels</em>) – Radius of neighborhood used to calculate a local
+average threshold</p></li>
+<li><p><strong>min_frequency_to_remove</strong> (<em>int</em><em>, </em><em>pixels</em>) – Frequency in pixels used to define donut mask.</p></li>
+<li><p><strong>max_frequency_to_remove</strong> (<em>int</em><em>, </em><em>pixels</em>) – Frequency in pixels used to define donut mask.</p></li>
+<li><p><strong>max_size_of_small_objects_to_remove</strong> (<em>float</em><em>, </em><em>micrometers^2</em>) – Size beneath which no cells can exist.</p></li>
+<li><p><strong>peak_min_distance</strong> (<em>int</em><em>, </em><em>pixels</em>) – Min distance between nuclei.</p></li>
+<li><p><strong>size_after_watershed_to_remove</strong> (<em>float</em><em>, </em><em>micrometers^2</em>) – Size beneath which no cells can exist.
+Calculated after watershed.</p></li>
+<li><p><strong>cyto_local_avg_size</strong> (<em>int</em><em>, </em><em>pixels</em>) – Radius of neighborhood used to calculate a local
+average threshold</p></li>
+<li><p><strong>zoomLev</strong> (<em>int</em>) – Real magnification of the image.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>(N, C)</strong> – N is a labeled nucleus image. Where each label corresponds to an individual
+cell. 0 corresponds to the background. C is a labeled cytockeleton image. The
+labels correspond to the closest nucleus in N.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list of (M,N) numpy arrays. Long dtype</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="imagemks.workflows.measure_fluor_cells">
+<code class="descclassname">imagemks.workflows.</code><code class="descname">measure_fluor_cells</code><span class="sig-paren">(</span><em>label_Nuc</em>, <em>label_Cyto</em><span class="sig-paren">)</span><a class="headerlink" href="#imagemks.workflows.measure_fluor_cells" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates measurements for labeled Nucleus images and labeled Cytoskeleton images.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label_Nuc</strong> (<em>(</em><em>M</em><em>,</em><em>N</em><em>) </em><em>long dtype</em>) – A labeled nucleus image. Where each label corresponds to an individual
+cell. 0 corresponds to the background.</p></li>
+<li><p><strong>label_Cyto</strong> (<em>(</em><em>M</em><em>,</em><em>N</em><em>) </em><em>long dtype</em>) – A labeled cytockeleton image. The labels correspond to the closest
+nucleus in N. 0 corresponds to the background.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Measurements</strong> – Cell_Number, Nuc_Area_um2, Nuc_Perimeter_um, Nuc_Area_Factor,
+Nuc_Major_L_um, Nuc_Minor_L_um, Nuc_eccentricity, Nuc_orientation,
+Nucleus_eq_diameter_um, Cyto_Area_um2, Cyto_um, Cyto_Area_Factor,
+Cyto_orientation, Cyto_Major_L_um, Cyto_Minor_L_um</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dataframe of measurements for each cell</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="imagemks.workflows.visualize_fluor_cells">
+<code class="descclassname">imagemks.workflows.</code><code class="descname">visualize_fluor_cells</code><span class="sig-paren">(</span><em>L</em>, <em>A</em>, <em>thickness=1</em><span class="sig-paren">)</span><a class="headerlink" href="#imagemks.workflows.visualize_fluor_cells" title="Permalink to this definition">¶</a></dt>
+<dd><p>Colors the original image with the segmented image. Also marks borders of
+segmentation on the original image so that borders can be evaluated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> (<em>(</em><em>M</em><em>,</em><em>N</em><em>) </em><em>long dtype</em>) – The labeled image that is a segmentation of A.</p></li>
+<li><p><strong>A</strong> (<em>(</em><em>M</em><em>,</em><em>N</em><em>) or </em><em>(</em><em>M</em><em>,</em><em>N</em><em>,</em><em>3</em><em>) </em><em>array</em>) – The original image. Grayscale and color are supported.
+thickness : Thickness of the borders in pixels. Default is 1.
+color : Tuple of 3 uint8 RGB values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>(v1, v2)</strong> – v1 is a colored original image. v2 is the original image with
+marked borders.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple of (M,N,3) arrays uint8 dtype</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="API.html"
+                        title="previous chapter">API</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="KernFiltMask.html"
+                        title="next chapter">Kernels Filters and Masking</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Workflows.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="KernFiltMask.html" title="Kernels Filters and Masking"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="API.html" title="API"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ImageMKS 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="API.html" >API</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Sven Voigt.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.0.1.
+    </div>
+  </body>
+</html>

@@ -6,20 +6,25 @@ def divergent(size, centered=True):
 
     Parameters
     ----------
-    size : The size of the output grids.
-    centered : If true, the center will be in the middle of the array
+    size : tuple
+        The size of the output grids.
+    centered : boolean, optional
+        If true, the center will be in the middle of the array
         at pixel (size[0]//2, size[1]//2). If false, the center will be
         at the origin pixel (0,0). Defaults to True.
 
     Returns
     -------
-    A grid that defines the x and y values at each point in 2d space. If the
-    graph quadrants are recalled, a centered grid will produce an array with
-    quadrants ordered as such:
+    divergent_grid : tuple of ndarrays
+        A grid that defines the x and y values at each point in 2d space. If the
+        graph quadrants are recalled, a centered grid will produce an array with
+        quadrants ordered as such:
 
-    [ 2 | 1 ]
-    [ - - - ]
-    [ 3 | 4 ]
+        [ 2 | 1 ]
+
+        [-------]
+
+        [ 3 | 4 ]
     '''
     s0, s1 = size
 

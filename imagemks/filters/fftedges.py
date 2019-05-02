@@ -10,14 +10,18 @@ def local_avg(img, rad, mask=None):
 
     Parameters
     ----------
-    img : An image.
-    rad : The radius of the neighborhood.
-    mask : A binary array that can be used to define what is outside the
-        image. Optional.
+    img : (M,N) array
+        An image.
+    rad : numeric
+        The radius of the neighborhood.
+    mask : (M,N) binary array, optional
+        A binary array that can be used to define what is outside the
+        image.
 
     Returns
     -------
-    The local averages at all pixel locations.
+    local_averages : (M,N) array
+        The local averages at all pixel locations.
     '''
     s = img.shape
 

@@ -9,17 +9,22 @@ def circle(r, size=None, centered=True, dtype=np.bool_):
 
     Parameters
     ----------
-    r : The radius of the circle.
-    size : The size of the output array that contains the circle. Defaults to
+    r : numeric
+        The radius of the circle.
+    size : tuple, optional
+        The size of the output array that contains the circle. Defaults to
         (round(2*r+1), round(2*r+1)).
-    centered : If true, the circle will be centered in the middle of the array
+    centered : boolean, optional
+        If true, the circle will be centered in the middle of the array
         at pixel (size[0]//2, size[1]//2). If false, the circle will be centered
         at the origin pixel (0,0). Defaults to True.
-    dtype : A valid numpy dtype. Defaults to boolean.
+    dtype : object, optional
+        A valid numpy dtype. Defaults to boolean.
 
     Returns
     -------
-    A circle that obeys the equation :math:`x^2 + y^2 < r^2`
+    circle : ndarray
+        A circle that obeys the equation :math:`x^2 + y^2 < r^2`
     '''
 
     if size is None:
@@ -36,18 +41,24 @@ def donut(r_outer, r_inner, size=None, centered=True, dtype=np.bool_):
 
     Parameters
     ----------
-    r_outer : The radius of the outer border.
-    r_inner : The radius of the inner border.
-    size : The size of the output array that contains the donut. Defaults to
+    r_outer : numeric
+        The radius of the outer border.
+    r_inner : numeric
+        The radius of the inner border.
+    size : tuple, optional
+        The size of the output array that contains the donut. Defaults to
         (round(2*r_outer+1), round(2*r_outer+1)).
-    centered : If true, the donut will be centered in the middle of the array
+    centered : boolean, optional
+        If true, the donut will be centered in the middle of the array
         at pixel (size[0]//2, size[1]//2). If false, the donut will be centered
         at the origin pixel (0,0). Defaults to True.
-    dtype : A valid numpy dtype. Defaults to boolean.
+    dtype : object, optional
+        A valid numpy dtype. Defaults to boolean.
 
     Returns
     -------
-    A donut that obeys the equation :math:`r_inner^2 < x^2 + y^2 < r_outer^2`
+    donut : ndarray
+        A donut that obeys the equation :math:`r_inner^2 < x^2 + y^2 < r_outer^2`
     '''
 
     if size is None:
@@ -66,20 +77,28 @@ def wheel(n_quad, width, size, r=None, start=0, centered=True, dtype=np.bool_):
 
     Parameters
     ----------
-    n_quad : The number of spokes per quadrant (graph quadrant).
-    width : The width of a spoke.
-    size : The size of the output array that contains the wheel.
-    r : The maximum length of a spoke. Optional.
-    start : Offset of the first spoke from 0 in radians.
-    centered : If true, the wheel will be centered in the middle of the array
+    n_quad : int
+        The number of spokes per quadrant (graph quadrant).
+    width : int
+        The width of a spoke.
+    size : tuple, optional
+        The size of the output array that contains the wheel.
+    r : numeric, optional
+        The maximum length of a spoke. Optional.
+    start : float, optional
+        Offset of the first spoke from 0 in radians.
+    centered : boolean, optional
+        If true, the wheel will be centered in the middle of the array
         at pixel (size[0]//2, size[1]//2). If false, the wheel will be centered
         at the origin pixel (0,0).
-    dtype : A valid numpy dtype.
+    dtype : object, optional
+        A valid numpy dtype.
 
     Returns
     -------
-    A wheel that is composed of lines (called spokes) that are evenly rotated
-    around the center pixel.
+    wheel : ndarray
+        A wheel that is composed of lines (called spokes) that are evenly rotated
+        around the center pixel.
     '''
 
     wheel = np.zeros(size)

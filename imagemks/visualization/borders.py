@@ -11,14 +11,17 @@ def make_boundary_image(L, A, thickness=1, color=(255,255,85)):
 
     Parameters
     ----------
-    L : The labeled image that is a segmentation of A.
-    A : The original image. Grayscale and color are supported.
+    L : (M,N) array of dtype long
+        The labeled image that is a segmentation of A.
+    A : (M,N) or (M,N,3) array of any numerical dtype
+        The original image. Grayscale and color are supported.
         thickness : Thickness of the borders in pixels. Default is 1.
         color : Tuple of 3 uint8 RGB values.
 
     Returns
     -------
-    The original image with marked borders.
+    marked_image : ndarray
+        The original image with marked borders, 3 color channels.
     '''
 
     if A.ndim == 2:

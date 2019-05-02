@@ -1,0 +1,75 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Fourier Masking"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "image/png": "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\n",
+      "text/plain": [
+       "<Figure size 432x288 with 1 Axes>"
+      ]
+     },
+     "metadata": {
+      "needs_background": "light"
+     },
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "a = np.ones((3,3))\n",
+    "a[1,1] = 0\n",
+    "\n",
+    "plt.imshow(a)\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.1"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

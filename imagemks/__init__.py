@@ -1,6 +1,5 @@
 from . import filters
 from . import masking
-from . import rw
 from . import structures
 from . import visualization
 from . import workflows
@@ -24,7 +23,6 @@ __version__ = get_version()
 __all__ = ['__version__',
            'filters',
            'masking',
-           'rw',
            'structures',
            'visualization',
            'workflows']

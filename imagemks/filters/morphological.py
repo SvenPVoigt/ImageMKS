@@ -8,18 +8,23 @@ def smooth_segmentation(S, r=1, add_cond=0.5, rem_cond=None):
 
     Parameters
     ----------
-    S : A binary image.
-    add_cond : Parameter that specifies the percentage of neighboring pixels
+    S : ndarray of booleans
+        A binary image.
+    add_cond : float, optional
+        Parameter that specifies the percentage of neighboring pixels
         that must be in the segmentation for that pixel to be converted to
         the segmentation.
-    rem_cond : Parameter that specifies the percentage of neighboring pixels
+    rem_cond : float, optional
+        Parameter that specifies the percentage of neighboring pixels
         outside the segmentation that cause a pixel to be removed from
         the segmentation.
-    r : The radius of the kernel used to define the neighboring pixels.
+    r : numeric, optional
+        The radius of the kernel used to define the neighboring pixels.
 
     Returns
     -------
-    A smoothed version of the segmented image.
+    smooth_segmentation : ndarray of booleans
+        A smoothed version of the segmented image.
 
     Notes
     -----

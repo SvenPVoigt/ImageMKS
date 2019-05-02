@@ -52,27 +52,41 @@ def segment_fluor_cells(imgNuc, imgCyto, smooth_size, intensity_curve, short_th_
 
     Parameters
     ----------
-    imgNuc : An image of nuclei with size (M,N)
-    imgCyto : An image of the cytoskeleton with same size (M,N).
-    smooth_size : The sigma of the gaussian.
-    intensity_curve : Exponent of the curve used to fit intensities on range [0,1]
-    short_th_radius : Radius of neighborhood used to calculate a local
+    imgNuc : (M,N) numpy array
+        An image of nuclei with size (M,N)
+    imgCyto : (M,N) numpy array
+        An image of the cytoskeleton with same size (M,N).
+    smooth_size : int, pixels
+        The sigma of the gaussian.
+    intensity_curve : int
+        Exponent of the curve used to fit intensities on range [0,1]
+    short_th_radius : int, pixels
+        Radius of neighborhood used to calculate a local
         average threshold.
-    long_th_radius : Radius of neighborhood used to calculate a local
+    long_th_radius : int, pixels
+        Radius of neighborhood used to calculate a local
         average threshold
-    min_frequency_to_remove : Frequency in pixels used to define donut mask.
-    max_frequency_to_remove : Frequency in pixels used to define donut mask.
-    max_size_of_small_objects_to_remove : Size beneath which no cells can exist.
-    peak_min_distance : Min distance between nuclei.
-    size_after_watershed_to_remove : Size beneath which no cells can exist.
+    min_frequency_to_remove : int, pixels
+        Frequency in pixels used to define donut mask.
+    max_frequency_to_remove : int, pixels
+        Frequency in pixels used to define donut mask.
+    max_size_of_small_objects_to_remove : float, micrometers^2
+        Size beneath which no cells can exist.
+    peak_min_distance : int, pixels
+        Min distance between nuclei.
+    size_after_watershed_to_remove : float, micrometers^2
+        Size beneath which no cells can exist.
         Calculated after watershed.
-    cyto_local_avg_size : Radius of neighborhood used to calculate a local
+    cyto_local_avg_size : int, pixels
+        Radius of neighborhood used to calculate a local
         average threshold
-    zoomLev : Real magnification of the image.
+    zoomLev : int
+        Real magnification of the image.
 
     Returns
     -------
-    (N, C) : N is a labeled nucleus image. Where each label corresponds to an individual
+    (N, C) : list of (M,N) numpy arrays. Long dtype
+        N is a labeled nucleus image. Where each label corresponds to an individual
         cell. 0 corresponds to the background. C is a labeled cytockeleton image. The
         labels correspond to the closest nucleus in N.
     '''
@@ -145,17 +159,20 @@ def measure_fluor_cells(label_Nuc, label_Cyto):
 
     Parameters
     ----------
-    label_Nuc : A labeled nucleus image. Where each label corresponds to an individual
+    label_Nuc : (M,N) long dtype
+        A labeled nucleus image. Where each label corresponds to an individual
         cell. 0 corresponds to the background.
-    label_Cyto : A labeled cytockeleton image. The labels correspond to the closest
+    label_Cyto : (M,N) long dtype
+        A labeled cytockeleton image. The labels correspond to the closest
         nucleus in N. 0 corresponds to the background.
 
     Returns
     -------
-    Cell_Number, Nuc_Area_um2, Nuc_Perimeter_um, Nuc_Area_Factor,
-    Nuc_Major_L_um, Nuc_Minor_L_um, Nuc_eccentricity, Nuc_orientation,
-    Nucleus_eq_diameter_um, Cyto_Area_um2, Cyto_um, Cyto_Area_Factor,
-    Cyto_orientation, Cyto_Major_L_um, Cyto_Minor_L_um
+    Measurements : dataframe of measurements for each cell
+        Cell_Number, Nuc_Area_um2, Nuc_Perimeter_um, Nuc_Area_Factor,
+        Nuc_Major_L_um, Nuc_Minor_L_um, Nuc_eccentricity, Nuc_orientation,
+        Nucleus_eq_diameter_um, Cyto_Area_um2, Cyto_um, Cyto_Area_Factor,
+        Cyto_orientation, Cyto_Major_L_um, Cyto_Minor_L_um
     '''
 
     nuc_props = regionprops(label_Nuc)
@@ -211,14 +228,17 @@ def visualize_fluor_cells(L, A, thickness=1):
 
     Parameters
     ----------
-    L : The labeled image that is a segmentation of A.
-    A : The original image. Grayscale and color are supported.
+    L : (M,N) long dtype
+        The labeled image that is a segmentation of A.
+    A: (M,N) or (M,N,3) array
+        The original image. Grayscale and color are supported.
         thickness : Thickness of the borders in pixels. Default is 1.
         color : Tuple of 3 uint8 RGB values.
 
     Returns
     -------
-    (v1, v2) : v1 is a colored original image. v2 is the original image with
+    (v1, v2) : tuple of (M,N,3) arrays uint8 dtype
+        v1 is a colored original image. v2 is the original image with
         marked borders.
     '''
 

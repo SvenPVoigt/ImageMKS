@@ -9,17 +9,23 @@ def fftgauss(img, sigma, theta=0, pad_type=None, **kwargs):
 
     Parameters
     ----------
-    img : An image to be smoothed of size (M,N) or (M,N,3).
-    sigma : Tuple defining the standard deviation of the gaussian in x and y directions.
+    img : (M,N) or (M,N,3) array
+        An image to be smoothed
+    sigma : tuple or float
+        Tuple defining the standard deviation of the gaussian in x and y directions.
         A single value will assign the same value to x and y st. devs..
-    theta : The rotation of the gaussian in radians.
-    pad_type : The padding type to be used. For additional information see numpy.pad .
+    theta : float, optional
+        The rotation of the gaussian in radians.
+    pad_type : string, optional
+        The padding type to be used. For additional information see numpy.pad .
         Defaults to constant.
-    kwargs : See numpy.pad . Defaults to constant_values=0.
+    kwargs : varies
+        See numpy.pad . Defaults to constant_values=0.
 
     Returns
     -------
-    A smoothed image.
+    smoothed_image : ndarray
+        A smoothed image. Keeps same shape and same number of color channels.
 
     Notes
     -----

@@ -7,20 +7,27 @@ def fftconvolve2d(h1, h2, r, pad_type=None, centered=True, **kwargs):
 
     Parameters
     ----------
-    h1 : The signal to be convolved, should be (M,N) and is usually the image.
-    h2 : The signal to convolve with, should be (M,N) and is usually the filter.
+    h1 : (M,N) array, numeric
+        The signal to be convolved, should be (M,N) and is usually the image.
+    h2 : (M,N) array, numeric
+        The signal to convolve with, should be (M,N) and is usually the filter.
         Will always be padded with zeros.
-    r : The padding width. Termed r since an int value will introduce a radius
+    r : int
+        The padding width. Termed r since an int value will introduce a radius
         around the input. Different padding widths not supported.
-    pad_type : The padding type to be used. For additional information see numpy.pad .
+    pad_type : string, optional
+        The padding type to be used. For additional information see numpy.pad .
         Defaults to constant.
-    centered : Needed since the filters in this package can be defined as centered
+    centered : boolean, optional
+        Needed since the filters in this package can be defined as centered
         or origin type.
-    kwargs : See numpy.pad . Defaults to constant_values=0.
+    kwargs : varies
+        See numpy.pad . Defaults to constant_values=0.
 
-    Results
+    Returns
     -------
-    a = A convolved signal in real space. Imaginary outputs not supported.
+    a : (M,N) array, float
+        A convolved 2d signal in real space. Imaginary outputs not supported.
     '''
 
     assert(h1.ndim==2 and h2.ndim==2)

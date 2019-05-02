@@ -7,13 +7,16 @@ def maskfourier(image, mask, centered=True):
 
     Parameters
     ----------
-    image : An (M,N) array or (M,N,3) array.
-    mask : An (M,N) array. Will be expanded to 3 channels if image is color.
-    centered : Is the mask for a centered fourier transform? Optional.
+    image : (M,N) array or (M,N,3) array
+    mask : An (M,N) array
+        Will be expanded to 3 channels if image is color.
+    centered : boolean, optional
+        Is the mask for a centered fourier transform?
 
     Returns
     -------
-    (A, B) : Two images generated from the masked fourier transforms. A contains
+    (A, B) : tuple of ndarrays
+        Two images generated from the masked fourier transforms. A contains
         an image reconstructed from values in the mask. B contains an image
         reconstructed from values outside the mask.
 
