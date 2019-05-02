@@ -57,23 +57,15 @@ class readlist(Dataset):
         return self.T[self.mode](Image.open(self.path+self.files[idx]))
 
 
-class rwtype(Dataset):
-    def __init__(self, folderpath, mode='r', order=None, prefix=None, ftype=None):
+class writeindex(Dataset):
+    def __init__(self, folderpath, order=None, prefix=None, ftype=None):
         super(rwtype, self).__init__()
 
-        assert mode in {'r', 'w'}, 'Mode needs to be r or w!'
+        assert all(isinstance(prefix, str), isinstance(ftype,str)), 'prefix and ftype need to be defined for w mode.'
 
-        assert any( (all( (mode=='w', prefix, ftype) ), mode=='r') ), 'prefix and ftype need to be defined for w mode.'
+        self.pre = prefix
 
-        if prefix:
-            self.pre = prefix
-        else:
-            self.pre = ''
-
-        if ftype:
-            self.ftype = ftype
-        else:
-            self.ftype = '.png'
+        self.ftype = ftype
 
         self.path = folderpath
         self.order = order
@@ -113,60 +105,3 @@ class rwtype(Dataset):
             savemat(self.path+self.pre+num+self.ftype, val)
         elif ftype == '.npy':
             np.save(self.path+self.pre+num+self.ftype, val)
-
-
-
-class folder_rw(Dataset):
-    def __init__(self, folderpath, prefix=None, ftype=None, filelist=True):
-        super(folder_rw, self).__init__()
-        if not prefix and not ftype:
-            raise ValueError('Either prefix or ftype need to be defined')
-
-        self.pre = prefix
-        self.ftype = ftype
-        self.path = folderpath
-        self.filelist = filelist
-
-        if filelist:
-            self.files = listdir(folderpath)
-            self.files = list(i for i in self.files if path.isfile(path.join(folderpath, i)))
-            if ftype:
-                self.files = list(i for i in self.files if i[-len(ftype):]==ftype)
-            if prefix:
-                self.files = list(i for i in self.files if i[:len(prefix)]==prefix)
-            self.files = sorted(self.files)
-
-    def __len__(self):
-        if self.filelist:
-            return len(self.files)
-        else:
-            return 0
-
-    def __str__(self):
-        strout = 'Is Directory? ' + str(path.isdir(self.path))
-
-        if self.filelist:
-            strout += '\n' + ',    '.join(self.files)
-
-        return strout
-
-    def update_list(self):
-        self.files = listdir(folderpath)
-        self.files = list(i for i in self.files if path.isfile(i))
-        if ftype:
-            self.files = list(i for i in self.files if i[-len(ftype):]==ftype)
-        if prefix:
-            self.files = list(i for i in self.files if i[:len(prefix)]==prefix)
-        self.files = sorted(self.files)
-
-    def __getitem__(self, idx):
-        if self.filelist:
-            return Image.open(self.path+self.files[idx])
-        else:
-            return Image.open(self.path+self.pre+'%04d'%idx+self.ftype)
-
-    def __setitem__(self, idx, val):
-        if self.ftype and self.pre:
-            val.save(self.path+self.pre+'%04d'%idx+self.ftype)
-        else:
-            raise ValueError('Writing requires prefix and ftype')

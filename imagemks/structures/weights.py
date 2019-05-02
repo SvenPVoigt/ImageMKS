@@ -1,25 +1,31 @@
 import numpy as np
 from math import floor, ceil, cos, sin
-import scipy.ndimage as ndi
 
+from .common import circular_check
 from .grids import divergent
 from .shapes import circle
-from ..common.size_check import circular_check
 
 
 def gauss(sigma, theta=0, size=None, centered=True):
     '''
-    Makes a circle with specified dtype. If bool or int, can be used as a mask.
+    Generates a 2d gaussian distribution. Usually used as a filter or kernel.
 
     Parameters
     ----------
-    r : The radius of the circle.
+    sigma : The standard deviation of the gaussian. First value of tuple is the
+        x st. dev., second value is the y st. dev.. If one value is given,
+        x and y st. dev. are the same.
     size : The size of the output array that contains the object. Defaults to
-        (round(2*r+1), round(2*r+1)).
+        (round(4*sigma+1), round(4*sigma+1)).
     centered : If true, the center will be in the middle of the array
         at pixel (size[0]//2, size[1]//2). If false, the center will be
         at the origin pixel (0,0). Defaults to True.
+
+    Returns
+    -------
+    A 2d gaussian distribution.
     '''
+
     if isinstance(sigma, list) or isinstance(sigma, tuple):
         sx, sy = sigma
     else:
@@ -55,6 +61,26 @@ def gauss(sigma, theta=0, size=None, centered=True):
 
 
 def conical(r, slope=1, size=None, centered=True):
+    '''
+    Generates a 2d array of z values for a cone in range [0,1]. The location of each value is
+    tied to the x,y location of the pixel.
+
+    Parameters
+    ----------
+    r : The radius of the base of the cone
+    slope : The slope of the sides of the cone. Determines how quickly the cone approaches the
+        maximum value of 1.
+    size : The size of the output array that contains the object. Defaults to
+        (round(4*sigma+1), round(4*sigma+1)).
+    centered : If true, the center will be in the middle of the array
+        at pixel (size[0]//2, size[1]//2). If false, the center will be
+        at the origin pixel (0,0). Defaults to True.
+
+    Returns
+    -------
+    A cone described by a 2d array.
+    '''
+
     size = circular_check(r, size)
 
     if centered:
@@ -76,6 +102,25 @@ def conical(r, slope=1, size=None, centered=True):
 
 
 def drop(r, threshold=None, size=None, centered=True):
+    '''
+    Generates a 2d array of z values for a drop shape in range [0,1]. The location of each
+    z value is tied to the x,y location of the pixel.
+
+    Parameters
+    ----------
+    r : The radius of the base of the drop.
+    threshold : The relative values beneath which we determine the drop is equal to 0.
+    size : The size of the output array that contains the object. Defaults to
+        (round(4*sigma+1), round(4*sigma+1)).
+    centered : If true, the center will be in the middle of the array
+        at pixel (size[0]//2, size[1]//2). If false, the center will be
+        at the origin pixel (0,0). Defaults to True.
+
+    Returns
+    -------
+    A drop described by a 2d array.
+    '''
+
     size = circular_check(r, size)
 
     if centered:
