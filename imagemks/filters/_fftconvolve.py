@@ -1,6 +1,6 @@
 import numpy as np
 
-def fftconvolve2d(h1, h2, r, pad_type, centered=True, **kwargs):
+def fftconvolve2d(h1, h2, r, pad_type=None, centered=True, **kwargs):
     '''
     This method adds to the functionality of scipy.signal.fftconvolve
     by providing padding options for 2D arrays.
@@ -13,9 +13,10 @@ def fftconvolve2d(h1, h2, r, pad_type, centered=True, **kwargs):
     r : The padding width. Termed r since an int value will introduce a radius
         around the input. Different padding widths not supported.
     pad_type : The padding type to be used. For additional information see numpy.pad .
+        Defaults to constant.
     centered : Needed since the filters in this package can be defined as centered
         or origin type.
-    kwargs : see numpy.pad
+    kwargs : See numpy.pad . Defaults to constant_values=0.
 
     Results
     -------
@@ -29,7 +30,10 @@ def fftconvolve2d(h1, h2, r, pad_type, centered=True, **kwargs):
 
     s0, s1 = h1.shape
 
-    h1 = np.pad(h1, pad_width=r, mode=pad_type, **kwargs)
+    if pad_type:
+        h1 = np.pad(h1, pad_width=r, mode=pad_type, **kwargs)
+    else:
+        h1 = np.pad(h1, pad_width=r, mode='constant', constant_values=0)
 
     if not centered:
         h2 = np.fft.fftshift(h2)
