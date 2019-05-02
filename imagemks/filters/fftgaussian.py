@@ -33,7 +33,7 @@ def fftgauss(img, sigma, theta=0, pad_type=None, **kwargs):
     automatically handles color images. It also allows defining very unique
     gaussian kernels with strain and orientation.
     '''
-    s = img.shape
+    s = img.shape[:2]
     K = gauss(sigma, theta, size=s)
 
     return fftconvolve2d(img, K, r=2*sigma, pad_type=pad_type, centered=True, **kwargs)

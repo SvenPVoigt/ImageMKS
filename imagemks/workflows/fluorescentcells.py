@@ -43,6 +43,77 @@ def _th_max_hist(img, num_bins=100):
     return th
 
 
+def _gen_marks(label_img):
+    props = regionprops(label_img)
+    markers = np.zeros(label_img.shape)
+    label_val = 1
+
+    for i in props:
+        x, y = i.centroid
+        x = int(round(x))
+        y = int(round(y))
+        markers[x,y] = label_val
+        label_val += 1
+
+    return markers
+
+
+def default_parameters(cell_type):
+    '''
+    Generates a dictionary of default paramaters.
+
+    Parameters
+    ----------
+    cell_type : string
+        Either muscle or stem. More support coming soon.
+
+    Returns
+    -------
+    params : dictionary
+        Params defines smooth_size, intensity_curve, short_th_radius, long_th_radius,
+        min_frequency_to_remove, max_frequency_to_remove,
+        max_size_of_small_objects_to_remove, power_adjust, peak_min_distance,
+        size_after_watershed_to_remove, and cyto_local_avg_size.
+    '''
+    if cell_type is 'muscle':
+        params = {
+            'smooth_size': 3,
+            'intensity_curve': 2,
+            'short_th_radius': 50,
+            'long_th_radius': 600,
+            'min_frequency_to_remove': 1,
+            'max_frequency_to_remove': 500,
+            'max_size_of_small_objects_to_remove': 300,
+            'power_adjust': 1,
+            'peak_min_distance': 10,
+            'size_after_watershed_to_remove': 300,
+            'cyto_local_avg_size': 200
+            }
+
+        return params
+
+    elif cell_type is 'stem':
+
+        params = {
+            'smooth_size': 3,
+            'intensity_curve': 3,
+            'short_th_radius': 100,
+            'long_th_radius': 800,
+            'min_frequency_to_remove': 1,
+            'max_frequency_to_remove': 500,
+            'max_size_of_small_objects_to_remove': 1100,
+            'power_adjust': 1,
+            'peak_min_distance': 10,
+            'size_after_watershed_to_remove': 1100,
+            'cyto_local_avg_size': 200
+            }
+
+        return params
+
+    else:
+        print('Sorry this cell type is not yet supported.')
+
+
 def segment_fluor_cells(imgNuc, imgCyto, smooth_size, intensity_curve, short_th_radius,
                 long_th_radius, min_frequency_to_remove, max_frequency_to_remove,
                 max_size_of_small_objects_to_remove, peak_min_distance,
@@ -109,11 +180,12 @@ def segment_fluor_cells(imgNuc, imgCyto, smooth_size, intensity_curve, short_th_
     del th_short, th_long
 
     # Step 6: remove the short and long frequencies
-    mask = donut(r_outer=max_frequency_to_remove, r_inner=min_frequency_to_remove)
-    freq_Nuc = maskfourier(th_Nuc, mask)
+    mask = donut(r_outer=max_frequency_to_remove, r_inner=min_frequency_to_remove,
+                size=th_Nuc.shape)
+    freq_Nuc = maskfourier(th_Nuc, mask)[0]
 
     # Step 7: threshold the inverse fourier transform
-    th_m = _th_freq_1(freq_Nuc)
+    th_m = _th_max_hist(freq_Nuc)
     th_Nuc = freq_Nuc > th_m
     del freq_Nuc
 
@@ -145,7 +217,7 @@ def segment_fluor_cells(imgNuc, imgCyto, smooth_size, intensity_curve, short_th_
     th_Cyto = imgCyto > local_avg(imgCyto, cyto_local_avg_size)[0]
 
     # Step 15: generate relabeled markers from the nuclei centroids
-    new_markers = relabel_sequential(label_Nuc)
+    new_markers = _gen_marks(label_Nuc)
 
     # Step 16: watershed of cytoskeleton using new_markers
     label_Cyto = watershed(th_Cyto, new_markers, mask=th_Cyto.astype(np.bool_))
@@ -153,7 +225,7 @@ def segment_fluor_cells(imgNuc, imgCyto, smooth_size, intensity_curve, short_th_
     return [label_Nuc, label_Cyto]
 
 
-def measure_fluor_cells(label_Nuc, label_Cyto):
+def measure_fluor_cells(label_Nuc, label_Cyto, pix_size):
     '''
     Generates measurements for labeled Nucleus images and labeled Cytoskeleton images.
 
@@ -196,7 +268,7 @@ def measure_fluor_cells(label_Nuc, label_Cyto):
         cyto_P = cyto_props[i].perimeter  / pix_size
         cyto_SF = cyto_A / (cyto_P**2)
 
-        prop_df = prop_df.append(pan.DataFrame(
+        prop_df = prop_df.append(pd.DataFrame(
                       {'Cell_Index': (cell_index,),
                        'Nuc_Area_um2': (nucleus_A,),
                        'Nuc_Perimeter_um': (nucleus_P,) ,
