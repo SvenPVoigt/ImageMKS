@@ -150,14 +150,14 @@ class rwformat():
         How long the numeric value of the name should be.
     ftype : str, optional
         Specifies the type of the file that is includes in files
-    prefix : str, optional
+    pre : str, optional
         Specifies the prefix of the file that is included in files
     '''
     def __init__(self, folderpath, idx_len=None, prefix='', ftype='.png'):
 
         self.path = folderpath
         self.idx_len = idx_len
-        self.prefix = prefix
+        self.pre = prefix
         self.ftype = ftype
 
     def __len__(self):
@@ -167,10 +167,10 @@ class rwformat():
         '''
         files = listdir(self.path)
         files = list(i for i in files if path.isfile(path.join(self.path, i)))
-        if ftype:
-            files = list(i for i in files if i[-len(ftype):]==ftype)
-        if prefix:
-            files = list(i for i in files if i[:len(prefix)]==prefix)
+        if self.ftype:
+            files = list(i for i in files if i[-len(self.ftype):]==self.ftype)
+        if self.pre:
+            files = list(i for i in files if i[:len(self.pre)]==self.pre)
         return len(files)
 
     def __str__(self):
@@ -193,11 +193,11 @@ class rwformat():
         else:
             num = str(idx)
 
-        if ftype in {'.jpeg', '.jpg', '.png', '.PNG', '.tif'}:
+        if self.ftype in {'.jpeg', '.jpg', '.png', '.PNG', '.tif'}:
             return Image.open(self.path+self.pre+num+self.ftype)
-        elif ftype == '.mat':
+        elif self.ftype == '.mat':
             return loadmat(self.path+self.pre+num+self.ftype)
-        elif ftype == '.npy':
+        elif self.ftype == '.npy':
             return np.load(self.path+self.pre+num+self.ftype)
 
     def __setitem__(self, idx, val):
@@ -206,9 +206,9 @@ class rwformat():
         else:
             num = str(idx)
 
-        if ftype in {'.jpeg', '.jpg', '.png', '.PNG', '.tif'}:
+        if self.ftype in {'.jpeg', '.jpg', '.png', '.PNG', '.tif'}:
             val.save(self.path+self.pre+num+self.ftype)
-        elif ftype == '.mat':
+        elif self.ftype == '.mat':
             savemat(self.path+self.pre+num+self.ftype, val)
-        elif ftype == '.npy':
+        elif self.ftype == '.npy':
             np.save(self.path+self.pre+num+self.ftype, val)
