@@ -1,0 +1,41 @@
+test.py
+
+# Mac crap
+.DS_Store
+
+
+#############
+## Python
+#############
+
+*.py[co]
+
+# Packages
+*.egg
+*.egg-info
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+
+# ipython
+.ipynb_checkpoints
+
+#Sphinx
+doc/rst
+doc/_build
+
+#pytest
+.cache

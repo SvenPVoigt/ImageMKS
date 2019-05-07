@@ -6,6 +6,6 @@ def circular_check(r, size):
         return size
 
 
-def oriented_check(size):
+def oriented_check(r, size):
     if size is None:
         return (round(2*r+1), round(2*r+1))

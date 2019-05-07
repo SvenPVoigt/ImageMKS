@@ -1,29 +1,71 @@
 from os import listdir, path
 from PIL import Image
-import torchvision.transforms as transforms
-from torch.utils.data import Dataset, DataLoader
 from random import shuffle
 from scipy.io import loadmat, savemat
 import numpy as np
 
 
-class readlist(Dataset):
-    ''' Reads a sorted list of files from the specified directory if those files are of type jpg, jpeg, png, or PNG. '''
+class listload():
+    '''
+    Reads a sorted list of files from the specified directory if those files are of type tif, tiff, jpg, jpeg, png, or PNG. Can specify the type if desired.
+
+    Will then allow accessing these files via slicing.
+
+    Parameters
+    ----------
+    folderpath : string
+    order : string, optional
+        Any of {sorted or random}.
+    mode : string, optional
+        Any of {train, test, predict, read}.
+    train_T : function, optional
+        Function that transforms the training input.
+    test_T : function, optional
+        Function that transforms the test input.
+    predict_T : function, optional
+        Function that transforms the predict input.
+    read_T : function, optional
+        Function that transforms the read input.
+    ftype : str, optional
+        Specifies the type of the file that is includes in files
+    prefix : str, optional
+        Specifies the prefix of the file that is included in files
+
+    Attributes
+    ----------
+    path : string
+        Folder path.
+    mode : string
+        Specifies how the reader class loads data.
+    files : list
+        List of all files in folder.
+    T : function
+        Function that transforms loaded data.
+    ftype : str, optional
+        Specifies the type of the file that is includes in files
+    prefix : str, optional
+        Specifies the prefix of the file that is included in files
+    '''
 
 
-    def __init__(self, folderpath, order='sorted', mode='predict', train_T=lambda x:x, test_T=lambda x:x, predict_T=lambda x:x, read_T=lambda x:x):
+    def __init__(self, folderpath, order='sorted', mode='predict', train_T=lambda x:x, test_T=lambda x:x, predict_T=lambda x:x, read_T=lambda x:x, ftype=None, prefix=None):
         assert order in {'sorted', 'random'}
         assert mode in {'train', 'test', 'predict', 'read'}
         self.T = {'train':train_T, 'test':test_T, 'predict':predict_T, 'read':read_T}
-
-        super(readlist, self).__init__()
 
         self.path = folderpath
         self.mode = mode
 
         self.files = listdir(folderpath)
         self.files = list(i for i in self.files if path.isfile(path.join(folderpath, i)))
-        self.files = list(i for i in self.files if i.split('.')[-1] in {'jpg', 'jpeg', 'png', 'PNG', 'tif'})
+
+        if ftype:
+            self.files = list(i for i in self.files if i[-len(self.ftype):]==self.ftype)
+        else:
+            self.files = list(i for i in self.files if i.split('.')[-1] in {'jpg', 'jpeg', 'png', 'PNG', 'tif', 'tiff'})
+
+        if prefix:
+            self.files = list(i for i in self.files if i[:len(self.prefix)]==self.prefix)
 
         if order is 'sorted':
             self.files = sorted(self.files)
@@ -40,16 +82,44 @@ class readlist(Dataset):
 
 
     def print_all_files_(self):
+        '''
+        Function that prints all files in the folder.
+
+        Prints
+        ------
+        all_files : str
+            Each file separated by `,` in files.
+        '''
         return '\n' + ',    '.join(self.files)
 
 
+    def change_mode(self, mode):
+        '''
+        Function that changes how the reader loads data.
+
+        Parameters
+        ----------
+        mode : str
+        '''
+        self.mode = mode
+
+
     def update_list(self):
+        '''
+        If any files were added to or removed from the folder, then this
+        function should be run to update files that will be loaded.
+
+        Updates
+        -------
+        files : str
+            All files in the folder that meet the prefix and ftype rules.
+        '''
         self.files = listdir(folderpath)
         self.files = list(i for i in self.files if path.isfile(i))
         if ftype:
-            self.files = list(i for i in self.files if i[-len(ftype):]==ftype)
+            self.files = list(i for i in self.files if i[-len(self.ftype):]==self.ftype)
         if prefix:
-            self.files = list(i for i in self.files if i[:len(prefix)]==prefix)
+            self.files = list(i for i in self.files if i[:len(self.prefix)]==self.prefix)
         self.files = sorted(self.files)
 
 
@@ -57,116 +127,88 @@ class readlist(Dataset):
         return self.T[self.mode](Image.open(self.path+self.files[idx]))
 
 
-class rwtype(Dataset):
-    def __init__(self, folderpath, mode='r', order=None, prefix=None, ftype=None):
-        super(rwtype, self).__init__()
+class rwformat():
+    '''
+    Reads and writes from a folder by combining the prefix, ftype,
+    and passed idx value. Can set width of the idx with idx_len.
 
-        assert mode in {'r', 'w'}, 'Mode needs to be r or w!'
+    Parameters
+    ----------
+    folderpath : string
+    idx_len : int, optional
+        How long the numeric value of the name should be.
+    ftype : str, optional
+        Specifies the type of the file that is includes in files
+    prefix : str, optional
+        Specifies the prefix of the file that is included in files
 
-        assert any( (all( (mode=='w', prefix, ftype) ), mode=='r') ), 'prefix and ftype need to be defined for w mode.'
-
-        if prefix:
-            self.pre = prefix
-        else:
-            self.pre = ''
-
-        if ftype:
-            self.ftype = ftype
-        else:
-            self.ftype = '.png'
+    Attributes
+    ----------
+    path : string
+        Folder path.
+    idx_len : int, optional
+        How long the numeric value of the name should be.
+    ftype : str, optional
+        Specifies the type of the file that is includes in files
+    pre : str, optional
+        Specifies the prefix of the file that is included in files
+    '''
+    def __init__(self, folderpath, idx_len=None, prefix='', ftype='.png'):
 
         self.path = folderpath
-        self.order = order
+        self.idx_len = idx_len
+        self.pre = prefix
+        self.ftype = ftype
 
     def __len__(self):
-        self.files = listdir(folderpath)
-        self.files = list(i for i in self.files if path.isfile(path.join(folderpath, i)))
-        if ftype:
-            self.files = list(i for i in self.files if i[-len(ftype):]==ftype)
-        if prefix:
-            self.files = list(i for i in self.files if i[:len(prefix)]==prefix)
-        return len(self.files)
+        '''
+        Finds how many files have been written to the folder or are
+        currently in the folder
+        '''
+        files = listdir(self.path)
+        files = list(i for i in files if path.isfile(path.join(self.path, i)))
+        if self.ftype:
+            files = list(i for i in files if i[-len(self.ftype):]==self.ftype)
+        if self.pre:
+            files = list(i for i in files if i[:len(self.pre)]==self.pre)
+        return len(files)
 
     def __str__(self):
         return 'Is %s a directory? '%self.path + str(path.isdir(self.path))
 
     def print_all_files_(self):
+        '''
+        Function that prints all files in the folder.
+
+        Prints
+        ------
+        all_files : str
+            Each file separated by `,` in files.
+        '''
         return '\n' + ',    '.join(self.files)
 
     def __getitem__(self, idx):
-        if self.order:
-            num = '{number:0{width}d}'.format(width=self.order, number=idx)
+        if self.idx_len:
+            num = '{number:0{width}d}'.format(width=self.idx_len, number=idx)
         else:
             num = str(idx)
 
-        return Image.open(self.path+self.pre+num+self.ftype)
+        if self.ftype in {'.jpeg', '.jpg', '.png', '.PNG', '.tif'}:
+            return Image.open(self.path+self.pre+num+self.ftype)
+        elif self.ftype == '.mat':
+            return loadmat(self.path+self.pre+num+self.ftype)
+        elif self.ftype == '.npy':
+            return np.load(self.path+self.pre+num+self.ftype)
 
     def __setitem__(self, idx, val):
-        if self.order:
-            num = '{number:0{width}d}'.format(width=self.order, number=idx)
+        if self.idx_len:
+            num = '{number:0{width}d}'.format(width=self.idx_len, number=idx)
         else:
             num = str(idx)
 
-        if ftype in {'.jpeg', '.jpg', '.png', '.PNG', '.tif'}:
+        if self.ftype in {'.jpeg', '.jpg', '.png', '.PNG', '.tif'}:
             val.save(self.path+self.pre+num+self.ftype)
-        elif ftype == '.mat':
+        elif self.ftype == '.mat':
             savemat(self.path+self.pre+num+self.ftype, val)
-        elif ftype == '.npy':
+        elif self.ftype == '.npy':
             np.save(self.path+self.pre+num+self.ftype, val)
-
-
-
-class folder_rw(Dataset):
-    def __init__(self, folderpath, prefix=None, ftype=None, filelist=True):
-        super(folder_rw, self).__init__()
-        if not prefix and not ftype:
-            raise ValueError('Either prefix or ftype need to be defined')
-
-        self.pre = prefix
-        self.ftype = ftype
-        self.path = folderpath
-        self.filelist = filelist
-
-        if filelist:
-            self.files = listdir(folderpath)
-            self.files = list(i for i in self.files if path.isfile(path.join(folderpath, i)))
-            if ftype:
-                self.files = list(i for i in self.files if i[-len(ftype):]==ftype)
-            if prefix:
-                self.files = list(i for i in self.files if i[:len(prefix)]==prefix)
-            self.files = sorted(self.files)
-
-    def __len__(self):
-        if self.filelist:
-            return len(self.files)
-        else:
-            return 0
-
-    def __str__(self):
-        strout = 'Is Directory? ' + str(path.isdir(self.path))
-
-        if self.filelist:
-            strout += '\n' + ',    '.join(self.files)
-
-        return strout
-
-    def update_list(self):
-        self.files = listdir(folderpath)
-        self.files = list(i for i in self.files if path.isfile(i))
-        if ftype:
-            self.files = list(i for i in self.files if i[-len(ftype):]==ftype)
-        if prefix:
-            self.files = list(i for i in self.files if i[:len(prefix)]==prefix)
-        self.files = sorted(self.files)
-
-    def __getitem__(self, idx):
-        if self.filelist:
-            return Image.open(self.path+self.files[idx])
-        else:
-            return Image.open(self.path+self.pre+'%04d'%idx+self.ftype)
-
-    def __setitem__(self, idx, val):
-        if self.ftype and self.pre:
-            val.save(self.path+self.pre+'%04d'%idx+self.ftype)
-        else:
-            raise ValueError('Writing requires prefix and ftype')

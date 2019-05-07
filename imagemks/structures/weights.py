@@ -1,13 +1,35 @@
 import numpy as np
 from math import floor, ceil, cos, sin
-import scipy.ndimage as ndi
 
+from ..common import circular_check
 from .grids import divergent
 from .shapes import circle
-from ..common.size_check import circular_check
 
 
 def gauss(sigma, theta=0, size=None, centered=True):
+    '''
+    Generates a 2d gaussian distribution. Usually used as a filter or kernel.
+
+    Parameters
+    ----------
+    sigma : float
+        The standard deviation of the gaussian. First value of tuple is the
+        x st. dev., second value is the y st. dev.. If one value is given,
+        x and y st. dev. are the same.
+    size : tuple, optional
+        The size of the output array that contains the object. Defaults to
+        (round(4*sigma+1), round(4*sigma+1)).
+    centered : boolean, optional
+        If true, the center will be in the middle of the array
+        at pixel (size[0]//2, size[1]//2). If false, the center will be
+        at the origin pixel (0,0). Defaults to True.
+
+    Returns
+    -------
+    gauss_distribution : ndarray
+        A 2d gaussian distribution.
+    '''
+
     if isinstance(sigma, list) or isinstance(sigma, tuple):
         sx, sy = sigma
     else:
@@ -42,31 +64,32 @@ def gauss(sigma, theta=0, size=None, centered=True):
     return np.exp(-(a*X*X + 2*b*X*Y + c*Y*Y))
 
 
-def dgauss():
-    g = gaussian(s_x, s_y, theta_degrees, n)
-
-    if phi_degrees is None:
-        rads = 0
-    else:
-        rads = phi_degrees * np.pi / 180
-
-    der_x = np.array([ [-1, 1], ])
-    der_y = np.array([ [-1,], [1,] ])
-
-    gx = ndi.convolve(g, der_x, mode='mirror')
-
-    gy = ndi.convolve(g, der_y, mode='mirror')
-
-    dg = np.cos(rads) * gx + np.sin(rads) * gy
-
-    return (1/np.sum(np.abs(dg))) * dg
-
-
-def d2gauss():
-    pass
-
-
 def conical(r, slope=1, size=None, centered=True):
+    '''
+    Generates a 2d array of z values for a cone in range [0,1]. The location of each value is
+    tied to the x,y location of the pixel.
+
+    Parameters
+    ----------
+    r : numeric
+        The radius of the base of the cone
+    slope : float
+        The slope of the sides of the cone. Determines how quickly the cone approaches the
+        maximum value of 1.
+    size : tuple, optional
+        The size of the output array that contains the object. Defaults to
+        (round(4*sigma+1), round(4*sigma+1)).
+    centered : boolean, optional
+        If true, the center will be in the middle of the array
+        at pixel (size[0]//2, size[1]//2). If false, the center will be
+        at the origin pixel (0,0). Defaults to True.
+
+    Returns
+    -------
+    cone : ndarray
+        A cone described by a 2d array.
+    '''
+
     size = circular_check(r, size)
 
     if centered:
@@ -88,6 +111,30 @@ def conical(r, slope=1, size=None, centered=True):
 
 
 def drop(r, threshold=None, size=None, centered=True):
+    '''
+    Generates a 2d array of z values for a drop shape in range [0,1]. The location of each
+    z value is tied to the x,y location of the pixel.
+
+    Parameters
+    ----------
+    r : numeric
+        The radius of the base of the drop.
+    threshold : float
+        The relative values beneath which we determine the drop is equal to 0.
+    size : tuple, optional
+        The size of the output array that contains the object. Defaults to
+        (round(4*sigma+1), round(4*sigma+1)).
+    centered : boolean, optional
+        If true, the center will be in the middle of the array
+        at pixel (size[0]//2, size[1]//2). If false, the center will be
+        at the origin pixel (0,0). Defaults to True.
+
+    Returns
+    -------
+    drop : ndarray
+        A drop described by a 2d array.
+    '''
+
     size = circular_check(r, size)
 
     if centered:
@@ -109,19 +156,3 @@ def drop(r, threshold=None, size=None, centered=True):
         drop[cone<threshold] = threshold
 
     return drop
-
-
-def linear():
-    pass
-
-
-def parabolic_radial():
-    pass
-
-
-def parabolic_straight():
-    pass
-
-
-def epanechnikov():
-    pass
