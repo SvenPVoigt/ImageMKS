@@ -1,5 +1,5 @@
 from .grids import divergent
-from .shapes import circle, donut, wheel
+from .shapes import circle, donut, wheel, line, line_gen
 from .weights import gauss, conical, drop
 
 __all__ = ['divergent',
@@ -8,4 +8,6 @@ __all__ = ['divergent',
            'wheel',
            'gauss',
            'conical',
-           'drop']
+           'drop',
+           'line',
+           'line_gen']

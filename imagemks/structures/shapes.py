@@ -71,7 +71,25 @@ def donut(r_outer, r_inner, size=None, centered=True, dtype=np.bool_):
     return np.logical_and(D <= r_outer**2, D>=r_inner**2).astype(dtype)
 
 
-def wheel(n_quad, width, size, r=None, start=0, centered=True, dtype=np.bool_):
+def line(a, size, width=None, r=None, centered=True, dtype=np.bool_):
+    X, Y = divergent(size, centered)
+
+    if width:
+        line = np.logical_and(np.sin(a)*X + np.cos(a)*Y < width, np.sin(a)*X + np.cos(a)*Y > -width)
+    else:
+        line = (np.sin(a)*X + np.cos(a)*Y) == 0
+
+    if r:
+        line = np.logical_and(X**2+Y**2 <= r, line)
+
+    return line.astype(dtype)
+
+
+def line_gen(n, size, width=None, r=None, start=0, centered=True, dtype=np.bool_):
+    return (line(a, size=size, width=width, r=r) for a in np.linspace(start, np.pi-np.pi/n+start, n))
+
+
+def wheel(n_quad, size, width=None, r=None, start=0, centered=True, dtype=np.bool_):
     '''
     Makes a 2d wheel with specified dtype. If bool or int, can be used as a mask.
 
@@ -79,10 +97,10 @@ def wheel(n_quad, width, size, r=None, start=0, centered=True, dtype=np.bool_):
     ----------
     n_quad : int
         The number of spokes per quadrant (graph quadrant).
-    width : int
-        The width of a spoke.
     size : tuple, optional
         The size of the output array that contains the wheel.
+    width : int
+        The width of a spoke.
     r : numeric, optional
         The maximum length of a spoke. Optional.
     start : float, optional
@@ -102,10 +120,9 @@ def wheel(n_quad, width, size, r=None, start=0, centered=True, dtype=np.bool_):
     '''
 
     wheel = np.zeros(size)
-    X, Y = divergent(size, centered)
 
     for a in np.linspace(start, np.pi-np.pi/(2*n_quad)+start, 2*n_quad):
-        mask = np.logical_and(np.sin(a)*X + np.cos(a)*Y < width, np.sin(a)*X + np.cos(a)*Y > -width)
+        mask = line(a, size=size, width=width, start=start)
         wheel = np.logical_or(wheel, mask)
 
     if r:
