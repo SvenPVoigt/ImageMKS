@@ -19,7 +19,7 @@ def maskfft(image, mask, centered=True):
         H_low = ifftshift(H_low)
         H_high = ifftshift(H_high)
 
-    F_low = ifftn(H_low).real
-    F_high = ifftn(H_high).real
+    F_low = ifftn(H_low, axes=(0,1)).real
+    F_high = ifftn(H_high, axes=(0,1)).real
 
     return (F_low, F_high)
