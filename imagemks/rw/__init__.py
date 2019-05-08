@@ -1,4 +1,4 @@
-from .folder import listload, rwformat
+from .folder import dirload, rwformat
 
-__all__ = ['listload',
+__all__ = ['dirload',
            'rwformat']

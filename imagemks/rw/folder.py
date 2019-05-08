@@ -5,7 +5,7 @@ from scipy.io import loadmat, savemat
 import numpy as np
 
 
-class listload():
+class dirload():
     '''
     Reads a sorted list of files from the specified directory if those files are of type tif, tiff, jpg, jpeg, png, or PNG. Can specify the type if desired.
 
@@ -56,11 +56,14 @@ class listload():
         self.path = folderpath
         self.mode = mode
 
+        self.ftype = ftype
+        self.prefix = prefix
+
         self.files = listdir(folderpath)
         self.files = list(i for i in self.files if path.isfile(path.join(folderpath, i)))
 
         if ftype:
-            self.files = list(i for i in self.files if i[-len(self.ftype):]==self.ftype)
+            self.files = list(i for i in self.files if i[-len(ftype):]==ftype)
         else:
             self.files = list(i for i in self.files if i.split('.')[-1] in {'jpg', 'jpeg', 'png', 'PNG', 'tif', 'tiff'})
 
@@ -121,6 +124,14 @@ class listload():
         if prefix:
             self.files = list(i for i in self.files if i[:len(self.prefix)]==self.prefix)
         self.files = sorted(self.files)
+
+
+    def getpath(self, idx):
+        return (self.path+self.files[idx])
+
+
+    def getname(self, idx):
+        return ''.join(self.files[idx].split('.')[:-1])
 
 
     def __getitem__(self, idx):
