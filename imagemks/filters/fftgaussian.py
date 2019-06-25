@@ -1,6 +1,8 @@
 from ._fftconvolve import fftconvolve2d
 from ..structures.weights import gauss
 
+from math import ceil
+
 def fftgauss(img, sigma, theta=0, pad_type=None, **kwargs):
     '''
     Smooths the input image with a gaussian kernel. Uses the fft method and allows
@@ -36,4 +38,4 @@ def fftgauss(img, sigma, theta=0, pad_type=None, **kwargs):
     s = img.shape[:2]
     K = gauss(sigma, theta, size=s)
 
-    return fftconvolve2d(img, K, r=2*sigma, pad_type=pad_type, centered=True, **kwargs)
+    return fftconvolve2d(img, K, r=2*ceil(sigma), pad_type=pad_type, centered=True, **kwargs)
