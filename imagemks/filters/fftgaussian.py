@@ -38,4 +38,4 @@ def fftgauss(img, sigma, theta=0, pad_type=None, **kwargs):
     s = img.shape[:2]
     K = gauss(sigma, theta, size=s)
 
-    return fftconvolve2d(img, K, r=2*ceil(sigma), pad_type=pad_type, centered=True, **kwargs)
+    return fftconvolve2d(img, K, r=2*ceil(max(sigma)), pad_type=pad_type, centered=True, **kwargs)
