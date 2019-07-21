@@ -104,6 +104,7 @@ class dirload():
         ----------
         mode : str
         '''
+        assert mode in {'train', 'predict', 'read'}
         self.mode = mode
 
 
