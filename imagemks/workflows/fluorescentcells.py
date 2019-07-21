@@ -17,31 +17,6 @@ from ..masking import maskfourier
 from ..visualization import make_boundary_image
 
 
-def _th_max_hist(img, num_bins=100):
-    '''
-    Method for thresholding at the max of a histogram.
-
-    Parameters
-    ----------
-    img : An image of size (M,N).
-    num_bins : Number of bins used for histogram. Optional.
-
-    Returns
-    -------
-    A threshold value.
-    '''
-
-    minbin = np.amin(img)
-    maxbin = np.amax(img)
-    bins = np.linspace(minbin, maxbin, num_bins)
-    hist, bins = np.histogram(img.ravel(), bins = bins)
-
-    bins_mid = (bins[1:] + bins[:-1])/2
-    big_peak = bins_mid[np.argmax(hist)]
-    th = 0.5 + big_peak
-
-    return th
-
 
 def _gen_marks(label_img):
     props = regionprops(label_img)
@@ -114,7 +89,7 @@ def default_parameters(cell_type):
         print('Sorry this cell type is not yet supported.')
 
 
-def segment_fluor_cells(imgNuc, imgCyto, smooth_size, intensity_curve, short_th_radius,
+def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius,
                 long_th_radius, min_frequency_to_remove, max_frequency_to_remove,
                 max_size_of_small_objects_to_remove, peak_min_distance,
                 size_after_watershed_to_remove, cyto_local_avg_size, zoomLev):
@@ -123,10 +98,10 @@ def segment_fluor_cells(imgNuc, imgCyto, smooth_size, intensity_curve, short_th_
 
     Parameters
     ----------
-    imgNuc : (M,N) numpy array
+    N : (M,N) numpy array
         An image of nuclei with size (M,N)
-    imgCyto : (M,N) numpy array
-        An image of the cytoskeleton with same size (M,N).
+    C : (M,N) numpy array
+        An image of the cytoskeleton with same size as the nucleus image (M,N).
     smooth_size : int, pixels
         The sigma of the gaussian.
     intensity_curve : int
@@ -162,67 +137,56 @@ def segment_fluor_cells(imgNuc, imgCyto, smooth_size, intensity_curve, short_th_
         labels correspond to the closest nucleus in N.
     '''
 
-    # Step 1: smoothing intensity values and smoothing out peaks
-    imgNuc = fftgauss(imgNuc, smooth_size)
+    # Processing color images and converting the images to the range [0,1]
+    if N.ndim == 3:
+        N = np.sum(np.array(N), axis=2)
 
-    # Step 2: contrast enhancement by scaling intensities (from 0-1) on a curve
-    ########  many other methods can be implemented for this step which could benefit the segmentation
-    imgNuc = np.power(imgNuc/np.amax(imgNuc), intensity_curve)
+    N = (( N-np.amin(N)) / np.ptp(N))
 
-    # Step 3: short range local avg threshold
-    th_short = imgNuc > local_avg(imgNuc, short_th_radius)[0]
+    if C.ndim == 3:
+        C = np.sum(np.array(C), axis=2)
 
-    # Step 4: long range local avg threshold
-    th_long = imgNuc > local_avg(imgNuc, long_th_radius)[0]
+    C = (( C-np.amin(C)) / np.ptp(C))
 
-    # Step 5: long && short
-    th_Nuc = (th_short*th_long)
+    # Preprocessing by smoothing and scaling nucleus image
+    N = fftgauss(N, smooth_size, pad_type='edge')
+    N = np.power(N, intensity_curve)
+
+    # Local avg threshold
+    th_short = N > local_avg(N, short_th_radius)
+    th_long = N > local_avg(N, long_th_radius)
     del th_short, th_long
+    th_N = (th_short*th_long)
 
-    # Step 6: remove the short and long frequencies
-    mask = donut(r_outer=max_frequency_to_remove, r_inner=min_frequency_to_remove,
-                size=th_Nuc.shape)
-    freq_Nuc = maskfourier(th_Nuc, mask)[0]
+    # Remove small objects
+    th_N = remove_small_objects(th_N, max_size_of_small_objects_to_remove * (zoomLev))
 
-    # Step 7: threshold the inverse fourier transform
-    th_m = _th_max_hist(freq_Nuc)
-    th_Nuc = freq_Nuc > th_m
-    del freq_Nuc
+    # Distance transform
+    distance = ndi.distance_transform_edt(th_N)
 
-    # Step 8: remove small objects
-    th_Nuc = remove_small_objects(th_Nuc, max_size_of_small_objects_to_remove * (zoomLev))
-
-    # Step 9: distance transform
-    distance = ndi.distance_transform_edt(th_Nuc)
-
-    # Step 10: mark the maxima in the distance transform and assign labels
+    # Mark the maxima in the distance transform and assign labels
     peak_markers = corner_peaks(distance, min_distance=peak_min_distance, indices=False)
     peak_markers = ndi.label(peak_markers)[0]
 
-    # Step 11: separate touching nuclei using the watershed markers
-    label_Nuc = watershed(th_Nuc, peak_markers, mask=th_Nuc)
+    # Separate touching nuclei using the watershed markers, removing small objects, and relabeling
+    label_N = watershed(th_N, peak_markers, mask=th_N)
+    label_N = remove_small_objects(label_N, size_after_watershed_to_remove * (zoomLev))
 
-    # Step 12: removing small regions after the watershed segmenation
-    sizes_matrix = ndi.sum(label_Nuc>0, label_Nuc, np.unique(label_Nuc))
-    rem_region = sizes_matrix < ( size_after_watershed_to_remove * (zoomLev) )
-    remove_pixel = rem_region[label_Nuc]
-    label_Nuc[remove_pixel] = 0
-
-    # Step 13: reassigning labels, so that they are continuously numbered
-    old_labels = np.unique(label_Nuc)
+    # Assigning sequential labels
+    old_labels = np.unique(label_Ni)
     for i in range(len(old_labels)):
-        label_Nuc[label_Nuc == old_labels[i]] = i
+        label_Ni[label_Ni == old_labels[i]] = i
 
     # Step 14: local threshold of the cytoskeleton
-    th_Cyto = imgCyto > local_avg(imgCyto, cyto_local_avg_size)[0]
+    th_C = C > local_avg(C, cyto_local_avg_size)[0]
 
     # Step 15: generate relabeled markers from the nuclei centroids
-    new_markers = _gen_marks(label_Nuc)
+    new_markers = _gen_marks(label_N)
 
     # Step 16: watershed of cytoskeleton using new_markers
-    label_Cyto = watershed(th_Cyto, new_markers, mask=th_Cyto.astype(np.bool_))
+    label_C = watershed(th_C, new_markers, mask=th_C.astype(np.bool_))
 
-    return [label_Nuc, label_Cyto]
+    return [label_N, label_C]
 
 
 def measure_fluor_cells(label_Nuc, label_Cyto, pix_size):

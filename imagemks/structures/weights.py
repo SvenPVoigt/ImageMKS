@@ -1,5 +1,5 @@
 import numpy as np
-from math import floor, ceil, cos, sin
+from math import floor, ceil, cos, sin, pi
 
 from ..common import circular_check
 from .grids import divergent
@@ -61,7 +61,7 @@ def gauss(sigma, theta=0, size=None, centered=True):
     b = -sin(2*theta) / (4 * sx**2) + sin(2*theta) / (4 * sy**2)
     c = sin(theta)**2 / (2 * sx**2) + cos(theta)**2 / (2 * sy**2)
 
-    return np.exp(-(a*X*X + 2*b*X*Y + c*Y*Y))
+    return (1 / (2*pi*sx*sy)) * np.exp(-(a*X*X + 2*b*X*Y + c*Y*Y))
 
 
 def conical(r, slope=1, size=None, centered=True):
