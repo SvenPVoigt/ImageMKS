@@ -2,16 +2,18 @@
 import numpy as np
 import scipy.ndimage as ndi
 import pandas as pd
+from PIL import Image
+import matplotlib.pyplot as plt
 
 # Importing specific functions
-from skimage.morphology import remove_small_objects, watershed
+from skimage.morphology import remove_small_objects, remove_small_holes, watershed
 from skimage.feature import corner_peaks
 from skimage.segmentation import relabel_sequential
 from skimage.measure import regionprops
 from skimage.color import label2rgb
 
 # Importing ImageMKS functions
-from ..filters import fftgauss, local_avg
+from ..filters import fftgauss, local_avg, smooth_binary
 from ..structures import donut
 from ..masking import maskfourier
 from ..visualization import make_boundary_image
@@ -50,14 +52,12 @@ def default_parameters(cell_type):
         max_size_of_small_objects_to_remove, power_adjust, peak_min_distance,
         size_after_watershed_to_remove, and cyto_local_avg_size.
     '''
-    if cell_type is 'muscle':
+    if cell_type is 'muscle_progenitor':
         params = {
             'smooth_size': 3,
             'intensity_curve': 2,
             'short_th_radius': 50,
             'long_th_radius': 600,
-            'min_frequency_to_remove': 1,
-            'max_frequency_to_remove': 500,
             'max_size_of_small_objects_to_remove': 300,
             'power_adjust': 1,
             'peak_min_distance': 10,
@@ -67,15 +67,13 @@ def default_parameters(cell_type):
 
         return params
 
-    elif cell_type is 'stem':
+    elif cell_type is 'bone_stem':
 
         params = {
             'smooth_size': 3,
             'intensity_curve': 3,
             'short_th_radius': 100,
             'long_th_radius': 800,
-            'min_frequency_to_remove': 1,
-            'max_frequency_to_remove': 500,
             'max_size_of_small_objects_to_remove': 1100,
             'power_adjust': 1,
             'peak_min_distance': 10,
@@ -90,18 +88,17 @@ def default_parameters(cell_type):
 
 
 def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius,
-                long_th_radius, min_frequency_to_remove, max_frequency_to_remove,
-                max_size_of_small_objects_to_remove, peak_min_distance,
+                long_th_radius, max_size_of_small_objects_to_remove, peak_min_distance,
                 size_after_watershed_to_remove, cyto_local_avg_size, zoomLev):
     '''
     Segments fluorescent cells.
 
     Parameters
     ----------
-    N : (M,N) numpy array
-        An image of nuclei with size (M,N)
-    C : (M,N) numpy array
-        An image of the cytoskeleton with same size as the nucleus image (M,N).
+    N : (M,N,3) numpy array
+        A color image of nuclei with size (M,N,3)
+    C : (M,N,3) numpy array
+        A color image of the cytoskeleton with same size as the nucleus image (M,N,3).
     smooth_size : int, pixels
         The sigma of the gaussian.
     intensity_curve : int
@@ -112,10 +109,6 @@ def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius,
     long_th_radius : int, pixels
         Radius of neighborhood used to calculate a local
         average threshold
-    min_frequency_to_remove : int, pixels
-        Frequency in pixels used to define donut mask.
-    max_frequency_to_remove : int, pixels
-        Frequency in pixels used to define donut mask.
     max_size_of_small_objects_to_remove : float, micrometers^2
         Size beneath which no cells can exist.
     peak_min_distance : int, pixels
@@ -137,54 +130,55 @@ def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius,
         labels correspond to the closest nucleus in N.
     '''
 
-    # Processing color images and converting the images to the range [0,1]
-    if N.ndim == 3:
-        N = np.sum(np.array(N), axis=2)
+    N = np.sum(np.array(N), axis=2)
+    N = ( (( N-np.amin(N)) / np.ptp(N)) )
 
-    N = (( N-np.amin(N)) / np.ptp(N))
+    C = np.sum(np.array(C), axis=2)
+    C = ( (( C-np.amin(C)) / np.ptp(C)) )
 
-    if C.ndim == 3:
-        C = np.sum(np.array(C), axis=2)
-
-    C = (( C-np.amin(C)) / np.ptp(C))
-
-    # Preprocessing by smoothing and scaling nucleus image
+    # Step 1: smoothing intensity values and smoothing out peaks
     N = fftgauss(N, smooth_size, pad_type='edge')
-    N = np.power(N, intensity_curve)
 
-    # Local avg threshold
+    # Step 2: contrast enhancement by scaling intensities (from 0-1) on a curve
+    ########  many other methods can be implemented for this step which could benefit the segmentation
+    N = np.power(N/np.amax(N), intensity_curve)
+
+    # Step 3: short and long range local avg threshold
     th_short = N > local_avg(N, short_th_radius)
     th_long = N > local_avg(N, long_th_radius)
-    del th_short, th_long
-    th_N = (th_short*th_long)
 
-    # Remove small objects
+    th_N = (th_short*th_long)
+    del th_short, th_long
+
+    # Step 4: remove small objects
+    th_N = remove_small_objects(th_N, 20)
     th_N = remove_small_objects(th_N, max_size_of_small_objects_to_remove * (zoomLev))
 
-    # Distance transform
+    # Step 5: distance transform and generate markers from peaks
     distance = ndi.distance_transform_edt(th_N)
-
-    # Mark the maxima in the distance transform and assign labels
     peak_markers = corner_peaks(distance, min_distance=peak_min_distance, indices=False)
     peak_markers = ndi.label(peak_markers)[0]
 
-    # Separate touching nuclei using the watershed markers, removing small objects, and relabeling
+    # Step 6: separate touching nuclei using the watershed markers
     label_N = watershed(th_N, peak_markers, mask=th_N)
+
+    # Step 7: removing small regions after the watershed segmenation
     label_N = remove_small_objects(label_N, size_after_watershed_to_remove * (zoomLev))
 
-    # Assigning sequential labels
-    old_labels = np.unique(label_Ni)
+    # Step 8: reassigning labels, so that they are continuously numbered
+    old_labels = np.unique(label_N)
     for i in range(len(old_labels)):
-        label_Ni[label_Ni == old_labels[i]] = i
+        label_N[label_N == old_labels[i]] = i
 
     # Step 14: local threshold of the cytoskeleton
-    th_C = C > local_avg(C, cyto_local_avg_size)[0]
+    label_C = C > local_avg(C, cyto_local_avg_size)
+    label_C = smooth_binary(label_C, add_cond=0.5)
 
     # Step 15: generate relabeled markers from the nuclei centroids
     new_markers = _gen_marks(label_N)
 
     # Step 16: watershed of cytoskeleton using new_markers
-    label_C = watershed(th_C, new_markers, mask=th_C.astype(np.bool_))
+    label_C = watershed(label_C, new_markers, mask=label_C.astype(np.bool_))
 
     return [label_N, label_C]
 
@@ -257,7 +251,7 @@ def measure_fluor_cells(label_Nuc, label_Cyto, pix_size):
     return prop_df
 
 
-def visualize_fluor_cells(L, A, thickness=1):
+def visualize_fluor_cells(L, A, thickness=1, bg_color='b', engine='matplotlib', figsize=(10,10)):
     '''
     Colors the original image with the segmented image. Also marks borders of
     segmentation on the original image so that borders can be evaluated.
@@ -270,6 +264,8 @@ def visualize_fluor_cells(L, A, thickness=1):
         The original image. Grayscale and color are supported.
         thickness : Thickness of the borders in pixels. Default is 1.
         color : Tuple of 3 uint8 RGB values.
+    thickness: int
+        Thickness of the yellow borders drawn on the im
 
     Returns
     -------
@@ -278,10 +274,21 @@ def visualize_fluor_cells(L, A, thickness=1):
         marked borders.
     '''
 
-    v1 = label2rgb(L, A, bg_label=0, bg_color=(0.1,0.1,0.5), alpha=0.3, image_alpha=1)
+    if bg_color is 'b':
+        bg_color=(0.1,0.1,0.5)
+    elif bg_color is 'g':
+        bg_color=(0.1,0.5,0.1)
 
-    v1 = np.interp(v1, (0,1), (0,255)).astype(np.uint8)
+    A = label2rgb(L, A, bg_label=0, bg_color=bg_color, alpha=0.1, image_alpha=1)
 
-    v2 = make_boundary_image(L, A)
+    A = np.interp(A, (0,1), (0,255)).astype(np.uint8)
 
-    return (v1, v2)
+    A = make_boundary_image(L, A, thickness=thickness)
+
+    if engine == 'matplotlib':
+        fig, ax = plt.subplots(1,1,figsize=figsize)
+        ax.imshow(A)
+        plt.show(fig)
+    elif engine == 'PIL':
+        A = Image.fromarray(A)
+        A.show()
