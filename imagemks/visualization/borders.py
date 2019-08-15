@@ -2,7 +2,7 @@ import numpy as np
 from skimage.segmentation import find_boundaries
 from skimage.morphology import binary_dilation, disk
 
-def make_boundary_image(L, A, thickness=1, color=(255,255,85)):
+def make_boundary_image(L, A, thickness=1, color=(255,255,85), rescale_hist=True):
     '''
     Marks borders of segmentation on the original image so that borders can
     be evaluated. Similar to skimage.segmentation.mark_boundaries. This function
@@ -27,7 +27,11 @@ def make_boundary_image(L, A, thickness=1, color=(255,255,85)):
     if A.ndim == 2:
         A = np.stack((A,A,A), axis=2)
 
-    A = np.interp(A, (np.amin(A), np.amax(A)), (0,255)).astype(np.uint8)
+    if rescale_hist:
+        A = np.interp(A, (np.amin(A), np.amax(A)), (0,255)).astype(np.uint8)
+    else:
+        A = A.astype(np.uint8)
+
     mask = find_boundaries(L)
     mask = binary_dilation(mask, selem=disk(thickness))
 
