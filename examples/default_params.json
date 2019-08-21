@@ -1,0 +1,1 @@
+{"smooth_size": 3, "intensity_curve": 2, "short_th_radius": 50, "long_th_radius": 600, "max_size_of_small_objects_to_remove": 300, "power_adjust": 1, "peak_min_distance": 10, "size_after_watershed_to_remove": 300, "cyto_local_avg_size": 200}

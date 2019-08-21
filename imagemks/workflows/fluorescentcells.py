@@ -4,6 +4,7 @@ import scipy.ndimage as ndi
 import pandas as pd
 from PIL import Image
 import matplotlib.pyplot as plt
+import json
 
 # Importing specific functions
 from skimage.morphology import remove_small_objects, remove_small_holes, watershed
@@ -42,7 +43,7 @@ def default_parameters(cell_type):
     Parameters
     ----------
     cell_type : string
-        Either muscle or stem. More support coming soon.
+        Either muscle_progenitor or bone_stem. More support coming soon.
 
     Returns
     -------
@@ -87,9 +88,7 @@ def default_parameters(cell_type):
         print('Sorry this cell type is not yet supported.')
 
 
-def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius,
-                long_th_radius, max_size_of_small_objects_to_remove, peak_min_distance,
-                size_after_watershed_to_remove, cyto_local_avg_size, zoomLev):
+def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius, long_th_radius, max_size_of_small_objects_to_remove, peak_min_distance, size_after_watershed_to_remove, cyto_local_avg_size, zoomLev):
     '''
     Segments fluorescent cells.
 
@@ -292,3 +291,30 @@ def visualize_fluor_cells(L, A, thickness=1, bg_color='b', engine='matplotlib', 
     elif engine == 'PIL':
         A = Image.fromarray(A)
         A.show()
+    elif engine == 'getimg':
+        A = Image.fromarray(A)
+        return A
+
+
+def getparams(path):
+    p = default_parameters('muscle_progenitor')
+
+    with open(path, 'w+') as f:
+        json.dump(p, f)
+
+
+def segment(path_n, path_c, save_n, save_c, path_p, zoom):
+    print('Loading nuclei from %s and saving labels to %s.'%(path_n, save_n))
+    nucleus_loader = dirload(path_n)
+    print('Loading cytoskeletons from %s and saving labels to %s.'%(path_c, save_c))
+    cyto_loader = dirload(path_c)
+    print('Loading parameters from %s.'%path_p)
+    with open(path_p, 'r') as f:
+        p = json.load(f)
+
+    for i, (N, C) in enumerate(zip(nucleus_loader, cyto_loader)):
+        Label_N, Label_C = segment_fluor_cells(N, C, p['smooth_size'], p['intensity_curve'], p['short_th_radius'], p['long_th_radius'], p['max_size_of_small_objects_to_remove'], p['peak_min_distance'], p['size_after_watershed_to_remove'], p['cyto_local_avg_size'], zoom)
+
+
+def measure():
+    pass
