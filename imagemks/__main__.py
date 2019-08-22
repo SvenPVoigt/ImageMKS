@@ -1,11 +1,12 @@
 import sys
+import os
 from imagemks.workflows import cellgetparams, cellsegment, cellmeasure
 
-def search4index(args, option):
+def getoption(args, option):
     ind = [i for i, val in enumerate(args) if val == option]
 
     if len(ind) == 1:
-        return ind[0]
+        return args[ind[0]+1]
     else:
         raise ValueError('Multiple or none of required option (%s) found in command.'%option)
 
@@ -20,26 +21,27 @@ def cellanalysis_routine(args):
         'measure',
     ]
 
-    if subcommand == 'getparams':
-        ind = search4index(args, '-sp')
-        save_p = args[ind+1]
+    if subcommand == 'info':
+        print("Available commands for program: " + ', '.join(subcommands))
+    elif subcommand == 'getparams':
+        save_p = getoption(args, '-sp')
         cellgetparams(save_p)
         print('Saved parameters to `%s`.'%save_p)
     elif subcommand == 'segment':
-        path_n = search4index(args, '-fn')
-        path_c = search4index(args, '-fc')
-        save_n = search4index(args, '-sn')
-        save_c = search4index(args, '-sc')
-        path_p = search4index(args, '-fp')
-        zoom = search4index(args, '-z')
-        cellsegment(path_n, path_c, save_n, save_c, path_p, zoom)
+        path_n = getoption(args, '-fn')
+        path_c = getoption(args, '-fc')
+        save_n = getoption(args, '-sn')
+        save_c = getoption(args, '-sc')
+        path_p = getoption(args, '-fp')
+        pxsize = float(getoption(args, '-z'))
+        cellsegment(path_n, path_c, save_n, save_c, path_p, pxsize)
     elif subcommand == 'measure':
-        path_n = search4index(args, '-fn')
-        path_c = search4index(args, '-fc')
-        save_m = search4index(args, '-sm')
-        path_p = search4index(args, '-fp')
-        zoom = search4index(args, '-z')
-        cellmeasure(path_n, path_c, save_m, path_p, zoom)
+        path_n = getoption(args, '-fn')
+        path_c = getoption(args, '-fc')
+        save_m = getoption(args, '-sm')
+        path_p = getoption(args, '-fp')
+        pxsize = float(getoption(args, '-z'))
+        cellmeasure(path_n, path_c, save_m, path_p, pxsize)
     else:
         print("Command not found. Run `cellanalysis info` for available commands.")
 

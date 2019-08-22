@@ -5,6 +5,9 @@ import pandas as pd
 from PIL import Image
 import matplotlib.pyplot as plt
 import json
+import os
+import warnings
+warnings.filterwarnings("ignore")
 
 # Importing specific functions
 from skimage.morphology import remove_small_objects, remove_small_holes, watershed
@@ -18,6 +21,7 @@ from ..filters import fftgauss, local_avg, smooth_binary
 from ..structures import donut
 from ..masking import maskfourier
 from ..visualization import make_boundary_image
+from ..rw import dirload
 
 
 
@@ -88,7 +92,16 @@ def default_parameters(cell_type):
         print('Sorry this cell type is not yet supported.')
 
 
-def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius, long_th_radius, max_size_of_small_objects_to_remove, peak_min_distance, size_after_watershed_to_remove, cyto_local_avg_size, zoomLev):
+def all_measurements():
+    measures = ['Cell_Index', 'Nuc_Area_um2', 'Nuc_Perimeter_um', 'Nuc_Area_Factor',
+                'Nuc_Major_L_um', 'Nuc_Minor_L_um', 'Nuc_eccentricity', 'Nuc_orientation',
+                'Nucleus_eq_diameter_um', 'Cyto_Area_um2', 'Cyto_Perimeter_um', 'Cyto_Area_Factor',
+                'Cyto_orientation', 'Cyto_Major_L_um', 'Cyto_Minor_L_um']
+
+    return measures
+
+
+def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius, long_th_radius, max_size_of_small_objects_to_remove, peak_min_distance, size_after_watershed_to_remove, cyto_local_avg_size, pix_size):
     '''
     Segments fluorescent cells.
 
@@ -118,8 +131,8 @@ def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius, lon
     cyto_local_avg_size : int, pixels
         Radius of neighborhood used to calculate a local
         average threshold
-    zoomLev : int
-        Real magnification of the image.
+    pix_size : float
+        Real measurement in micrometers of a pixel side.
 
     Returns
     -------
@@ -128,6 +141,9 @@ def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius, lon
         cell. 0 corresponds to the background. C is a labeled cytockeleton image. The
         labels correspond to the closest nucleus in N.
     '''
+
+    # The parameters are adjusted based on an image with pixel resolution of 0.48
+    zoomLev = 0.48 / pix_size
 
     N = np.sum(np.array(N), axis=2)
     N = ( (( N-np.amin(N)) / np.ptp(N)) )
@@ -198,21 +214,17 @@ def measure_fluor_cells(label_Nuc, label_Cyto, pix_size):
     Returns
     -------
     Measurements : dataframe of measurements for each cell
-        Cell_Number, Nuc_Area_um2, Nuc_Perimeter_um, Nuc_Area_Factor,
+        Cell_Index, Nuc_Area_um2, Nuc_Perimeter_um, Nuc_Area_Factor,
         Nuc_Major_L_um, Nuc_Minor_L_um, Nuc_eccentricity, Nuc_orientation,
-        Nucleus_eq_diameter_um, Cyto_Area_um2, Cyto_um, Cyto_Area_Factor,
+        Nucleus_eq_diameter_um, Cyto_Area_um2, Cyto_Perimeter_um, Cyto_Area_Factor,
         Cyto_orientation, Cyto_Major_L_um, Cyto_Minor_L_um
     '''
 
     nuc_props = regionprops(label_Nuc)
-    cyto_props = regionprops(label_Cyto)
 
     cell_index = 1
 
-    col_names = ['Cell_Number', 'Nuc_Area_um2', 'Nuc_Perimeter_um', 'Nuc_Area_Factor',
-                 'Nuc_Major_L_um', 'Nuc_Minor_L_um', 'Nuc_eccentricity', 'Nuc_orientation',
-                 'Nucleus_eq_diameter_um', 'Cyto_Area_um2', 'Cyto_um', 'Cyto_Area_Factor',
-                 'Cyto_orientation', 'Cyto_Major_L_um', 'Cyto_Minor_L_um']
+    col_names = all_measurements()
 
     prop_df = pd.DataFrame(columns = col_names)
 
@@ -221,9 +233,23 @@ def measure_fluor_cells(label_Nuc, label_Cyto, pix_size):
         nucleus_P = nuc_props[i].perimeter / pix_size
         nucleus_SF = nucleus_A / (nucleus_P**2)
 
-        cyto_A = cyto_props[i].area  / (pix_size**2)
-        cyto_P = cyto_props[i].perimeter  / pix_size
-        cyto_SF = cyto_A / (cyto_P**2)
+        cyto_props = regionprops((label_Cyto==i).astype(np.int))
+
+        try:
+            cyto_A = cyto_props[0].area  / (pix_size**2)
+            cyto_P = cyto_props[0].perimeter  / pix_size
+            cyto_SF = cyto_A / (cyto_P**2)
+            cyto_orientation = cyto_props[0].orientation
+            cyto_Major_L_um = cyto_props[0].major_axis_length
+            cyto_Minor_L_um = cyto_props[0].minor_axis_length
+
+        except:
+            cyto_A = None
+            cyto_P = None
+            cyto_SF = None
+            cyto_orientation = None
+            cyto_Major_L_um = None
+            cyto_Minor_L_um = None
 
         prop_df = prop_df.append(pd.DataFrame(
                       {'Cell_Index': (cell_index,),
@@ -238,9 +264,9 @@ def measure_fluor_cells(label_Nuc, label_Cyto, pix_size):
                        'Cyto_Area_um2': (cyto_A,),
                        'Cyto_Perimeter_um': (cyto_P,),
                        'Cyto_Area_Factor': (cyto_SF,),
-                       'Cyto_orientation': (cyto_props[i].orientation,),
-                       'Cyto_Major_L_um': (cyto_props[i].major_axis_length,),
-                       'Cyto_Minor_L_um': (cyto_props[i].minor_axis_length,)}))
+                       'Cyto_orientation': (cyto_orientation,),
+                       'Cyto_Major_L_um': (cyto_Major_L_um,),
+                       'Cyto_Minor_L_um': (cyto_Minor_L_um,)}))
         cell_index += 1
 
     # Reordering the columns
@@ -273,6 +299,8 @@ def visualize_fluor_cells(L, A, thickness=1, bg_color='b', engine='matplotlib', 
         marked borders.
     '''
 
+    A = np.array(A)
+
     if bg_color is 'b':
         bg_color=(0.1,0.1,0.5)
     elif bg_color is 'g':
@@ -303,18 +331,69 @@ def getparams(path):
         json.dump(p, f)
 
 
-def segment(path_n, path_c, save_n, save_c, path_p, zoom):
-    print('Loading nuclei from %s and saving labels to %s.'%(path_n, save_n))
+def segment(path_n, path_c, save_n, save_c, path_p, pxsize):
+    print('Loading nuclei from `%s` and saving labels to `%s`.'%(path_n, save_n))
     nucleus_loader = dirload(path_n)
-    print('Loading cytoskeletons from %s and saving labels to %s.'%(path_c, save_c))
+    print('Loading cytoskeletons from `%s` and saving labels to `%s`.'%(path_c, save_c))
     cyto_loader = dirload(path_c)
-    print('Loading parameters from %s.'%path_p)
+    print('Loading parameters from `%s`.'%path_p)
     with open(path_p, 'r') as f:
         p = json.load(f)
 
     for i, (N, C) in enumerate(zip(nucleus_loader, cyto_loader)):
-        Label_N, Label_C = segment_fluor_cells(N, C, p['smooth_size'], p['intensity_curve'], p['short_th_radius'], p['long_th_radius'], p['max_size_of_small_objects_to_remove'], p['peak_min_distance'], p['size_after_watershed_to_remove'], p['cyto_local_avg_size'], zoom)
+        # Make sure that the image ids for nucleus and cytoskeleton are the same
+        assert nucleus_loader.getname(i) == cyto_loader.getname(i)
+
+        print('\nSegmenting Nucleus and Cytoskeleton with id: `%s`.'%nucleus_loader.getname(i))
+
+        # Do segmentation. Pass all of the parameters in order.
+        Label_N, Label_C = segment_fluor_cells(N, C, p['smooth_size'], p['intensity_curve'], p['short_th_radius'], p['long_th_radius'], p['max_size_of_small_objects_to_remove'], p['peak_min_distance'], p['size_after_watershed_to_remove'], p['cyto_local_avg_size'], pxsize)
+
+        # Convert Images to PIL objects
+        Label_N = visualize_fluor_cells(Label_N, N, thickness=2, bg_color='b', engine='getimg')
+        Label_C = visualize_fluor_cells(Label_C, C, thickness=2, bg_color='g', engine='getimg')
+
+        # Save Labeled Images to File
+        path = os.path.join(save_n, nucleus_loader.getname(i) + '.png')
+        Label_N.save(path)
+        print('Saved labeled nuclei to `%s`.'%path)
+
+        path = os.path.join(save_c, nucleus_loader.getname(i) + '.png')
+        Label_C.save(path)
+        print('Saved labeled cytoskeletons to `%s`.'%path)
 
 
-def measure():
-    pass
+
+def measure(path_n, path_c, save_m, path_p, pxsize):
+        print('Loading nuclei from `%s`.'%path_n)
+        nucleus_loader = dirload(path_n)
+        print('Loading cytoskeletons from `%s`.'%path_c)
+        cyto_loader = dirload(path_c)
+        print('Loading parameters from `%s`.'%path_p)
+        with open(path_p, 'r') as f:
+            p = json.load(f)
+        print('Saving measurements to `%s`.'%save_m)
+
+        # Initialize Dataframe to save measurements
+        col_names = ['Image_ID',] + all_measurements()
+        M = pd.DataFrame(columns = col_names)
+
+        for i, (N, C) in enumerate(zip(nucleus_loader, cyto_loader)):
+            # Make sure that the image ids for nucleus and cytoskeleton are the same
+            assert nucleus_loader.getname(i) == cyto_loader.getname(i)
+
+            print('\nAnalyzing Nucleus and Cytoskeleton with id: `%s`.'%nucleus_loader.getname(i))
+
+            # Do segmentation. Pass all of the parameters in order.
+            Label_N, Label_C = segment_fluor_cells(N, C, p['smooth_size'], p['intensity_curve'], p['short_th_radius'], p['long_th_radius'], p['max_size_of_small_objects_to_remove'], p['peak_min_distance'], p['size_after_watershed_to_remove'], p['cyto_local_avg_size'], pxsize)
+
+            # Get the measurements
+            new_M = measure_fluor_cells(Label_N, Label_C, pxsize)
+            new_M.insert(0, 'Image_ID', nucleus_loader.getname(i))
+
+            # Append the measurements to the larger dataframe
+            M = M.append(new_M)
+
+        # Save Labeled Images to File
+        M.to_csv(save_m)
+        print('Saved measurements to `%s`.'%save_m)
