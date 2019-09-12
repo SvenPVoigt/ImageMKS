@@ -2,7 +2,7 @@ import numpy as np
 import scipy.ndimage as ndi
 from ..structures.shapes import circle
 
-def smooth_binary(S, r=1, add_cond=0.5, rem_cond=None):
+def smooth_binary(S, r=1, add_cond=None, rem_cond=None):
     '''
     Smooths a segmented image, where the input is a binary segmentation.
 
@@ -39,13 +39,12 @@ def smooth_binary(S, r=1, add_cond=0.5, rem_cond=None):
     S = S.astype(np.uint8)
 
     if add_cond:
-        add_cond_met = ndi.convolve(S, K, mode='reflect') > \
-                       round( add_cond * np.sum(K) )
-
-        return add_cond_met
+        add_cond_met = ndi.convolve(S, K, mode='reflect') > add_cond * np.sum(K)
+        return np.logical_or(S, add_cond_met)
 
     elif rem_cond:
-        rem_cond_met = ndi.convolve( np.logical_not(S), K, mode='reflect') > \
-                       round( rem_cond * np.sum(K) )
+        rem_cond_met = ndi.convolve(1-S, K, mode='reflect') > rem_cond * np.sum(K)
+        return np.logical_and(S, np.logical_not(rem_cond_met))
 
-        return np.logical_not(rem_cond_met)
+    else:
+        raise ValueError('Either add_cond or rem_cond must be specified.')

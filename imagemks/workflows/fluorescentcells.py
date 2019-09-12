@@ -6,8 +6,6 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import json
 import os
-import warnings
-warnings.filterwarnings("ignore")
 
 # Importing specific functions
 from skimage.morphology import remove_small_objects, remove_small_holes, watershed
@@ -52,22 +50,19 @@ def default_parameters(cell_type):
     Returns
     -------
     params : dictionary
-        Params defines smooth_size, intensity_curve, short_th_radius, long_th_radius,
-        min_frequency_to_remove, max_frequency_to_remove,
-        max_size_of_small_objects_to_remove, power_adjust, peak_min_distance,
-        size_after_watershed_to_remove, and cyto_local_avg_size.
+        Params defines smooth_size, peak_min_dist, intensity_exp,
+        short_threshold_r, long_threshold_r, cytoskeleton_threshold_r,
+        and min_size_objects.
     '''
     if cell_type is 'muscle_progenitor':
         params = {
             'smooth_size': 3,
-            'intensity_curve': 2,
-            'short_th_radius': 50,
-            'long_th_radius': 600,
-            'max_size_of_small_objects_to_remove': 300,
-            'power_adjust': 1,
-            'peak_min_distance': 10,
-            'size_after_watershed_to_remove': 300,
-            'cyto_local_avg_size': 200
+            'peak_min_dist': 10,
+            'intensity_exp': 2,
+            'short_threshold_r': 50,
+            'long_threshold_r': 600,
+            'cytoskeleton_threshold_r': 200,
+            'min_size_objects': 300,
             }
 
         return params
@@ -76,14 +71,12 @@ def default_parameters(cell_type):
 
         params = {
             'smooth_size': 3,
-            'intensity_curve': 3,
-            'short_th_radius': 100,
-            'long_th_radius': 800,
-            'max_size_of_small_objects_to_remove': 1100,
-            'power_adjust': 1,
-            'peak_min_distance': 10,
-            'size_after_watershed_to_remove': 1100,
-            'cyto_local_avg_size': 200
+            'peak_min_dist': 10,
+            'intensity_exp': 3,
+            'short_threshold_r': 100,
+            'long_threshold_r': 800,
+            'cytoskeleton_threshold_r': 200,
+            'min_size_objects': 1100,
             }
 
         return params
@@ -101,7 +94,9 @@ def all_measurements():
     return measures
 
 
-def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius, long_th_radius, max_size_of_small_objects_to_remove, peak_min_distance, size_after_watershed_to_remove, cyto_local_avg_size, pix_size):
+def segment_fluor_cells(N, C, pixel_scale, smooth_size, peak_min_dist, intensity_exp,
+                        short_threshold_r, long_threshold_r, cytoskeleton_threshold_r,
+                        min_size_objects):
     '''
     Segments fluorescent cells.
 
@@ -111,28 +106,25 @@ def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius, lon
         A color image of nuclei with size (M,N,3)
     C : (M,N,3) numpy array
         A color image of the cytoskeleton with same size as the nucleus image (M,N,3).
+    pixel_scale : float
+        Real measurement in micrometers of a pixel side.
     smooth_size : int, pixels
         The sigma of the gaussian.
-    intensity_curve : int
+    peak_min_dist : int, pixels
+        Min distance between nuclei.
+    intensity_exp : int
         Exponent of the curve used to fit intensities on range [0,1]
-    short_th_radius : int, pixels
+    short_threshold_r : int, pixels
         Radius of neighborhood used to calculate a local
         average threshold.
-    long_th_radius : int, pixels
+    long_threshold_r : int, pixels
         Radius of neighborhood used to calculate a local
         average threshold
-    max_size_of_small_objects_to_remove : float, micrometers^2
-        Size beneath which no cells can exist.
-    peak_min_distance : int, pixels
-        Min distance between nuclei.
-    size_after_watershed_to_remove : float, micrometers^2
-        Size beneath which no cells can exist.
-        Calculated after watershed.
-    cyto_local_avg_size : int, pixels
+    cytoskeleton_threshold_r : int, pixels
         Radius of neighborhood used to calculate a local
         average threshold
-    pix_size : float
-        Real measurement in micrometers of a pixel side.
+    min_size_objects : float, micrometers^2
+        Size beneath which no cells can exist.
 
     Returns
     -------
@@ -142,8 +134,8 @@ def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius, lon
         labels correspond to the closest nucleus in N.
     '''
 
-    # The parameters are adjusted based on an image with pixel resolution of 0.48
-    zoomLev = 0.48 / pix_size
+    # The parameters are adjusted based on an image with pixel scale of 0.48 micrometers/pixel
+    zoomLev = 0.48 / pixel_scale
 
     N = np.sum(np.array(N), axis=2)
     N = ( (( N-np.amin(N)) / np.ptp(N)) )
@@ -156,29 +148,29 @@ def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius, lon
 
     # Step 2: contrast enhancement by scaling intensities (from 0-1) on a curve
     ########  many other methods can be implemented for this step which could benefit the segmentation
-    N = np.power(N/np.amax(N), intensity_curve)
+    N = np.power(N/np.amax(N), intensity_exp)
 
     # Step 3: short and long range local avg threshold
-    th_short = N > local_avg(N, short_th_radius)
-    th_long = N > local_avg(N, long_th_radius)
+    th_short = N > local_avg(N, short_threshold_r)
+    th_long = N > local_avg(N, long_threshold_r)
 
     th_N = (th_short*th_long)
     del th_short, th_long
 
     # Step 4: remove small objects
     th_N = remove_small_objects(th_N, 20)
-    th_N = remove_small_objects(th_N, max_size_of_small_objects_to_remove * (zoomLev))
+    th_N = remove_small_objects(th_N, min_size_objects * (zoomLev))
 
     # Step 5: distance transform and generate markers from peaks
     distance = ndi.distance_transform_edt(th_N)
-    peak_markers = corner_peaks(distance, min_distance=peak_min_distance, indices=False)
+    peak_markers = corner_peaks(distance, min_distance=peak_min_dist, indices=False)
     peak_markers = ndi.label(peak_markers)[0]
 
     # Step 6: separate touching nuclei using the watershed markers
     label_N = watershed(th_N, peak_markers, mask=th_N)
 
     # Step 7: removing small regions after the watershed segmenation
-    label_N = remove_small_objects(label_N, size_after_watershed_to_remove * (zoomLev))
+    label_N = remove_small_objects(label_N, min_size_objects * (zoomLev))
 
     # Step 8: reassigning labels, so that they are continuously numbered
     old_labels = np.unique(label_N)
@@ -186,8 +178,9 @@ def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius, lon
         label_N[label_N == old_labels[i]] = i
 
     # Step 14: local threshold of the cytoskeleton
-    label_C = C > local_avg(C, cyto_local_avg_size)
-    label_C = smooth_binary(label_C, add_cond=0.5)
+    label_C = C > local_avg(C, cytoskeleton_threshold_r)
+    label_C = smooth_binary(label_C, r=6, add_cond=0.5)
+    label_C = smooth_binary(label_C, r=6, rem_cond=0.5)
 
     # Step 15: generate relabeled markers from the nuclei centroids
     new_markers = _gen_marks(label_N)
@@ -198,7 +191,7 @@ def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius, lon
     return [label_N, label_C]
 
 
-def measure_fluor_cells(label_Nuc, label_Cyto, pix_size):
+def measure_fluor_cells(label_Nuc, label_Cyto, pixel_scale):
     '''
     Generates measurements for labeled Nucleus images and labeled Cytoskeleton images.
 
@@ -229,15 +222,15 @@ def measure_fluor_cells(label_Nuc, label_Cyto, pix_size):
     prop_df = pd.DataFrame(columns = col_names)
 
     for i in range(len(nuc_props)):
-        nucleus_A = nuc_props[i].area / (pix_size**2)
-        nucleus_P = nuc_props[i].perimeter / pix_size
+        nucleus_A = nuc_props[i].area / (pixel_scale**2)
+        nucleus_P = nuc_props[i].perimeter / pixel_scale
         nucleus_SF = nucleus_A / (nucleus_P**2)
 
         cyto_props = regionprops((label_Cyto==i).astype(np.int))
 
         try:
-            cyto_A = cyto_props[0].area  / (pix_size**2)
-            cyto_P = cyto_props[0].perimeter  / pix_size
+            cyto_A = cyto_props[0].area  / (pixel_scale**2)
+            cyto_P = cyto_props[0].perimeter  / pixel_scale
             cyto_SF = cyto_A / (cyto_P**2)
             cyto_orientation = cyto_props[0].orientation
             cyto_Major_L_um = cyto_props[0].major_axis_length
@@ -347,7 +340,7 @@ def segment(path_n, path_c, save_n, save_c, path_p, pxsize):
         print('\nSegmenting Nucleus and Cytoskeleton with id: `%s`.'%nucleus_loader.getname(i))
 
         # Do segmentation. Pass all of the parameters in order.
-        Label_N, Label_C = segment_fluor_cells(N, C, p['smooth_size'], p['intensity_curve'], p['short_th_radius'], p['long_th_radius'], p['max_size_of_small_objects_to_remove'], p['peak_min_distance'], p['size_after_watershed_to_remove'], p['cyto_local_avg_size'], pxsize)
+        Label_N, Label_C = segment_fluor_cells(N, C, p['smooth_size'], p['intensity_exp'], p['short_threshold_r'], p['long_threshold_r'], p['min_size_objects'], p['peak_min_dist'], p['min_size_objects'], p['cytoskeleton_threshold_r'], pxsize)
 
         # Convert Images to PIL objects
         Label_N = visualize_fluor_cells(Label_N, N, thickness=2, bg_color='b', engine='getimg')
@@ -385,7 +378,7 @@ def measure(path_n, path_c, save_m, path_p, pxsize):
             print('\nAnalyzing Nucleus and Cytoskeleton with id: `%s`.'%nucleus_loader.getname(i))
 
             # Do segmentation. Pass all of the parameters in order.
-            Label_N, Label_C = segment_fluor_cells(N, C, p['smooth_size'], p['intensity_curve'], p['short_th_radius'], p['long_th_radius'], p['max_size_of_small_objects_to_remove'], p['peak_min_distance'], p['size_after_watershed_to_remove'], p['cyto_local_avg_size'], pxsize)
+            Label_N, Label_C = segment_fluor_cells(N, C, p['smooth_size'], p['intensity_exp'], p['short_threshold_r'], p['long_threshold_r'], p['min_size_objects'], p['peak_min_dist'], p['min_size_objects'], p['cytoskeleton_threshold_r'], pxsize)
 
             # Get the measurements
             new_M = measure_fluor_cells(Label_N, Label_C, pxsize)
