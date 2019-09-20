@@ -157,9 +157,12 @@ def segment_fluor_cells(N, C, pixel_scale, smooth_size, peak_min_dist, intensity
     th_N = (th_short*th_long)
     del th_short, th_long
 
-    # Step 4: remove small objects
+    # Step 4: remove small objects and smooth the binary image
     th_N = remove_small_objects(th_N, 20)
     th_N = remove_small_objects(th_N, min_size_objects * (zoomLev))
+
+    th_N = smooth_binary(th_N, r=6, add_cond=0.5)
+    th_N = smooth_binary(th_N, r=6, rem_cond=0.5)
 
     # Step 5: distance transform and generate markers from peaks
     distance = ndi.distance_transform_edt(th_N)
@@ -173,9 +176,7 @@ def segment_fluor_cells(N, C, pixel_scale, smooth_size, peak_min_dist, intensity
     label_N = remove_small_objects(label_N, min_size_objects * (zoomLev))
 
     # Step 8: reassigning labels, so that they are continuously numbered
-    old_labels = np.unique(label_N)
-    for i in range(len(old_labels)):
-        label_N[label_N == old_labels[i]] = i
+    label_N = relabel_sequential(label_N, offset=1)[0]
 
     # Step 14: local threshold of the cytoskeleton
     label_C = C > local_avg(C, cytoskeleton_threshold_r)
@@ -213,7 +214,7 @@ def measure_fluor_cells(label_Nuc, label_Cyto, pixel_scale):
         Cyto_orientation, Cyto_Major_L_um, Cyto_Minor_L_um
     '''
 
-    nuc_props = regionprops(label_Nuc)
+    nuc_props = regionprops(label_Nuc, coordinates='rc')
 
     cell_index = 1
 
@@ -222,19 +223,19 @@ def measure_fluor_cells(label_Nuc, label_Cyto, pixel_scale):
     prop_df = pd.DataFrame(columns = col_names)
 
     for i in range(len(nuc_props)):
-        nucleus_A = nuc_props[i].area / (pixel_scale**2)
-        nucleus_P = nuc_props[i].perimeter / pixel_scale
-        nucleus_SF = nucleus_A / (nucleus_P**2)
+        nucleus_A = nuc_props[i].area * (pixel_scale**2)
+        nucleus_P = nuc_props[i].perimeter * pixel_scale
+        nucleus_SF = 4 * np.pi * nucleus_A / (nucleus_P**2)
 
-        cyto_props = regionprops((label_Cyto==i).astype(np.int))
+        cyto_props = regionprops((label_Cyto==i).astype(np.int), coordinates='rc')
 
         try:
-            cyto_A = cyto_props[0].area  / (pixel_scale**2)
-            cyto_P = cyto_props[0].perimeter  / pixel_scale
-            cyto_SF = cyto_A / (cyto_P**2)
+            cyto_A = cyto_props[0].area * (pixel_scale**2)
+            cyto_P = cyto_props[0].perimeter * pixel_scale
+            cyto_SF = 4 * np.pi * cyto_A / (cyto_P**2)
             cyto_orientation = cyto_props[0].orientation
-            cyto_Major_L_um = cyto_props[0].major_axis_length
-            cyto_Minor_L_um = cyto_props[0].minor_axis_length
+            cyto_Major_L_um = cyto_props[0].major_axis_length * pixel_scale
+            cyto_Minor_L_um = cyto_props[0].minor_axis_length * pixel_scale
 
         except:
             cyto_A = None
@@ -249,11 +250,11 @@ def measure_fluor_cells(label_Nuc, label_Cyto, pixel_scale):
                        'Nuc_Area_um2': (nucleus_A,),
                        'Nuc_Perimeter_um': (nucleus_P,) ,
                        'Nuc_Area_Factor': (nucleus_SF,),
-                       'Nuc_Major_L_um': (nuc_props[i].major_axis_length,),
-                       'Nuc_Minor_L_um': (nuc_props[i].minor_axis_length,),
+                       'Nuc_Major_L_um': (nuc_props[i].major_axis_length*pixel_scale,),
+                       'Nuc_Minor_L_um': (nuc_props[i].minor_axis_length*pixel_scale,),
                        'Nuc_eccentricity': (nuc_props[i].eccentricity,),
                        'Nuc_orientation': (nuc_props[i].orientation,),
-                       'Nucleus_eq_diameter_um': (nuc_props[i].equivalent_diameter,),
+                       'Nucleus_eq_diameter_um': (nuc_props[i].equivalent_diameter*pixel_scale,),
                        'Cyto_Area_um2': (cyto_A,),
                        'Cyto_Perimeter_um': (cyto_P,),
                        'Cyto_Area_Factor': (cyto_SF,),
