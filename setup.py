@@ -11,5 +11,6 @@ setup(
     author_email='svenpvoigt@gmail.com',
     url='http://pypi.python.org/pypi/ImageMKS/',
     description='Sharing segmentation frameworks.',
+    scripts=['bin/imagemks', 'bin/cellanalysis'],
     install_requires=[],
 )

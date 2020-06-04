@@ -128,7 +128,7 @@ class dirload():
 
 
     def getpath(self, idx):
-        return (self.path+self.files[idx])
+        return path.join(self.path, self.files[idx])
 
 
     def getname(self, idx):
@@ -136,7 +136,7 @@ class dirload():
 
 
     def __getitem__(self, idx):
-        return self.T[self.mode](Image.open(self.path+self.files[idx]))
+        return self.T[self.mode](Image.open(path.join(self.path, self.files[idx])))
 
 
 class rwformat():

@@ -1,6 +1,7 @@
 test.py
 
 untested_notebooks/*
+secret_examples/*
 
 # Mac crap
 .DS_Store
