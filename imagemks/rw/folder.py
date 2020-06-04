@@ -1,4 +1,5 @@
-from os import listdir, path
+import os
+from os import listdir
 from PIL import Image
 from random import shuffle
 from scipy.io import loadmat, savemat
@@ -205,12 +206,16 @@ class rwformat():
         else:
             num = str(idx)
 
-        if self.ftype in {'.jpeg', '.jpg', '.png', '.PNG', '.tif'}:
-            return Image.open(self.path+self.pre+num+self.ftype)
+        path = os.path.join(self.path, self.pre + num + self.ftype)
+
+        if self.ftype in {'.jpeg', '.jpg', '.png', '.PNG', '.tif', '.tiff'}:
+            return Image.open(path)
         elif self.ftype == '.mat':
-            return loadmat(self.path+self.pre+num+self.ftype)
+            return loadmat(path)
         elif self.ftype == '.npy':
-            return np.load(self.path+self.pre+num+self.ftype)
+            return np.load(path)
+        else:
+            raise ValueError('Unsupported filetype (ftype)')
 
     def __setitem__(self, idx, val):
         if self.idx_len:
