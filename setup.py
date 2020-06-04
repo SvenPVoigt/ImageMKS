@@ -3,7 +3,7 @@ from setuptools import find_packages
 
 setup(
     name='ImageMKS',
-    version='0.0.1',
+    version='0.1.0',
     packages=find_packages(),
     license='The MIT License (MIT)',
     long_description=open('README.md').read(),
@@ -12,5 +12,12 @@ setup(
     url='http://pypi.python.org/pypi/ImageMKS/',
     description='Sharing segmentation frameworks.',
     scripts=['bin/imagemks', 'bin/cellanalysis'],
-    install_requires=[],
+    install_requires=[
+        'scipy',
+        'numpy',
+        'matplotlib',
+        'pandas',
+        'scikit-image',
+        'scikit-learn'
+    ],
 )
