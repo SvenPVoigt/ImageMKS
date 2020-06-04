@@ -89,10 +89,11 @@ def default_parameters(cell_type):
         print('Sorry this cell type is not yet supported.')
 
 
-def segment_fluor_cells(N, C, smooth_size, intensity_curve, short_th_radius,
-                long_th_radius, min_frequency_to_remove, max_frequency_to_remove,
-                max_size_of_small_objects_to_remove, peak_min_distance,
-                size_after_watershed_to_remove, cyto_local_avg_size, zoomLev):
+def segment_fluor_cells(N, C, zoomLev, smooth_size, intensity_curve,
+    short_th_radius, long_th_radius, min_frequency_to_remove,
+    max_frequency_to_remove, max_size_of_small_objects_to_remove,
+    power_adjust, peak_min_distance, size_after_watershed_to_remove,
+    cyto_local_avg_size):
     '''
     Segments fluorescent cells.
 
