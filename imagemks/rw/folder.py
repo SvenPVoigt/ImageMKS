@@ -1,5 +1,5 @@
 import os
-from os import listdir
+from os import listdir, path
 from PIL import Image
 from random import shuffle
 from scipy.io import loadmat, savemat
